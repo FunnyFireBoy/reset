@@ -6,4 +6,4 @@
 - [x] Verify XP, streak, security, build, and mobile flows
 
 - [x] Diagnose verification delivery and add resend-verification support
-- [ ] Add congratulatory messages and notifications when quests are completed
+- [x] Add congratulatory messages and notifications when quests are completed
