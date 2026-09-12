@@ -29,15 +29,50 @@ export type Goal = {
   scheduled_at: string | null;
 };
 
+export type DailyCheckin = {
+  checkin_date: string;
+  stayed_addiction_free: boolean;
+  streak_after: number;
+  xp_awarded: number;
+  message: string;
+};
+
+export function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function useLatestCheckin(userId?: string) {
+  return useQuery({
+    queryKey: ["daily-checkin", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from("daily_checkins")
+        .select("checkin_date, stayed_addiction_free, streak_after, xp_awarded, message")
+        .eq("user_id", userId)
+        .order("checkin_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as DailyCheckin | null;
+    },
+  });
+}
+
 export function useProfile(userId?: string) {
   return useQuery({
     queryKey: ["profile", userId],
     enabled: !!userId,
     queryFn: async () => {
+      if (!userId) return null;
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", userId!)
+        .eq("user_id", userId)
         .maybeSingle();
       if (error) throw error;
       return data as Profile | null;
@@ -50,10 +85,11 @@ export function useGoals(userId?: string) {
     queryKey: ["goals", userId],
     enabled: !!userId,
     queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("goals")
         .select("*")
-        .eq("user_id", userId!)
+        .eq("user_id", userId)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Goal[];
@@ -65,10 +101,11 @@ export function useCompleteGoal(userId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (goal: Goal) => {
+      if (!userId) throw new Error("Sign in to complete a goal");
       const { data: profile, error: pErr } = await supabase
         .from("profiles")
         .select("xp, gems")
-        .eq("user_id", userId!)
+        .eq("user_id", userId)
         .single();
       if (pErr) throw pErr;
 
@@ -84,7 +121,7 @@ export function useCompleteGoal(userId?: string) {
       const { error: uErr } = await supabase
         .from("profiles")
         .update({ xp, gems, level: levelFromXp(xp) })
-        .eq("user_id", userId!);
+        .eq("user_id", userId);
       if (uErr) throw uErr;
 
       return { xp, gems, leveledUp: levelFromXp(xp) > levelFromXp(profile.xp) };

@@ -1,9 +1,14 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ShoppingBag, LifeBuoy } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { Flame, LifeBuoy, ShoppingBag, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/useAuth";
-import { useGoals, useProfile } from "@/lib/profile";
+import { localDateString, useGoals, useLatestCheckin, useProfile } from "@/lib/profile";
+import { recordDailyCheckin } from "@/lib/checkin.functions";
 import { levelFromXp, levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
 
 export const Route = createFileRoute("/")({
@@ -38,6 +43,9 @@ function Home() {
   const { user, loading } = useAuth();
   const { data: profile, isLoading } = useProfile(user?.id);
   const { data: goals } = useGoals(user?.id);
+  const { data: latestCheckin, isLoading: checkinLoading } = useLatestCheckin(user?.id);
+  const saveCheckin = useServerFn(recordDailyCheckin);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -50,6 +58,33 @@ function Home() {
   const xp = profile?.xp ?? 0;
   const level = levelFromXp(xp);
   const openQuests = (goals ?? []).filter((g) => !g.completed).length;
+  const today = localDateString();
+  const checkedInToday = latestCheckin?.checkin_date === today;
+  const todayLabel = new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(new Date());
+
+  async function checkIn(stayedAddictionFree: boolean) {
+    try {
+      const result = await saveCheckin({
+        data: {
+          localDate: today,
+          timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+          stayedAddictionFree,
+        },
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["daily-checkin"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
+      if (result.xp_awarded > 0) toast.success(`+${result.xp_awarded} XP · ${result.message}`);
+      else toast.message(result.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save today's check-in");
+    }
+  }
 
   return (
     <AppShell header={<GemPill gems={profile?.gems ?? 0} name={profile?.display_name} />}>
@@ -67,6 +102,48 @@ function Home() {
           <LifeBuoy className="size-4" /> Get help
         </Link>
       </div>
+
+      <section className="cloud-card mb-6 overflow-hidden" aria-labelledby="daily-checkin-title">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <p className="text-xs font-black uppercase text-muted-foreground">{todayLabel}</p>
+            <h2 id="daily-checkin-title" className="font-hand text-3xl">Daily check-in</h2>
+          </div>
+          <div className="flex items-center gap-1 text-lg font-black" aria-label={`${latestCheckin?.streak_after ?? 0} day streak`}>
+            <Flame className="size-6 text-xp" /> {latestCheckin?.streak_after ?? 0}
+          </div>
+        </div>
+        <div className="p-4">
+          {checkinLoading ? (
+            <p className="text-sm text-muted-foreground">Checking today’s progress…</p>
+          ) : checkedInToday && latestCheckin ? (
+            <div className="flex gap-3">
+              <Sparkles className="mt-0.5 size-6 shrink-0 text-accent" />
+              <div>
+                <p className="font-black">
+                  {latestCheckin.stayed_addiction_free
+                    ? `${latestCheckin.streak_after} day streak · +${latestCheckin.xp_awarded} XP`
+                    : "Today is a fresh turning point"}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{latestCheckin.message}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm font-bold">Did you stay addiction-free today?</p>
+              <p className="mt-1 text-xs text-muted-foreground">Check in honestly once a day. A successful day earns 20 XP.</p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Button className="btn-glossy h-11 font-bold" onClick={() => checkIn(true)}>
+                  Yes, I did
+                </Button>
+                <Button variant="outline" className="h-11 bg-cloud font-bold" onClick={() => checkIn(false)}>
+                  Not today
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       <div className="cloud-card mb-6 p-4">
         <div className="flex items-baseline justify-between">
