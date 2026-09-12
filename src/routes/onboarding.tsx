@@ -144,7 +144,7 @@ function Onboarding() {
     },
   ];
 
-  const current = steps[Math.min(step, steps.length - 1)];
+  const current = steps[Math.min(step, steps.length - 1)]!;
 
   return (
     <div className="mx-auto min-h-screen max-w-md px-5 pt-10 pb-16">

@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Crown, User } from "lucide-react";
 import type { ReactNode } from "react";
 
-export function GemPill({ gems, name }: { gems: number; name?: string }) {
+export function GemPill({ gems, name }: { gems: number; name?: string | undefined }) {
   return (
     <div className="cloud-card flex items-center gap-2 px-4 py-1.5 text-sm font-bold">
       {name ? <span className="max-w-24 truncate font-hand text-lg">{name}</span> : null}
