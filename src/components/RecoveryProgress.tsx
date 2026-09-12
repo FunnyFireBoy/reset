@@ -28,7 +28,7 @@ function formatDate(date: string) {
     .format(new Date(`${date}T12:00:00`));
 }
 
-export function RecoveryProgress({ userId }: { userId?: string }) {
+export function RecoveryProgress({ userId }: { userId: string | undefined }) {
   const today = localDateString();
   const queryClient = useQueryClient();
   const { data: events, isLoading } = useRecoveryEvents(userId);

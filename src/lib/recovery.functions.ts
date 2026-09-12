@@ -67,7 +67,7 @@ export const logRecoveryRelapse = createServerFn({ method: "POST" })
       _user_id: context.userId,
       _relapse_date: data.localDate,
       _timezone_offset_minutes: data.timezoneOffsetMinutes,
-      _note: data.note,
+      ...(data.note ? { _note: data.note } : {}),
     });
     if (error) throw new Error("Your relapse could not be logged. Please try again.");
     if (!isRelapseResult(result)) throw new Error("Your relapse log returned an unexpected result.");
