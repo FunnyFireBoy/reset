@@ -29,6 +29,40 @@ export type Goal = {
   scheduled_at: string | null;
 };
 
+export type DailyCheckin = {
+  checkin_date: string;
+  stayed_addiction_free: boolean;
+  streak_after: number;
+  xp_awarded: number;
+  message: string;
+};
+
+export function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function useLatestCheckin(userId?: string) {
+  return useQuery({
+    queryKey: ["daily-checkin", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from("daily_checkins")
+        .select("checkin_date, stayed_addiction_free, streak_after, xp_awarded, message")
+        .eq("user_id", userId)
+        .order("checkin_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as DailyCheckin | null;
+    },
+  });
+}
+
 export function useProfile(userId?: string) {
   return useQuery({
     queryKey: ["profile", userId],

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { CheckCircle2, LoaderCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generatePlan } from "@/lib/plan.functions";
 import { useAuth } from "@/lib/useAuth";
@@ -38,6 +39,7 @@ function Onboarding() {
   const [frequency, setFrequency] = useState("");
   const [triggers, setTriggers] = useState("");
   const [busy, setBusy] = useState(false);
+  const [planReady, setPlanReady] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -47,7 +49,8 @@ function Onboarding() {
     setBusy(true);
     try {
       await run({ data: { addictionType, triggers, yearsAddicted, frequency } });
-      toast.success("Your plan is ready!");
+      setPlanReady(true);
+      await new Promise((resolve) => window.setTimeout(resolve, 900));
       navigate({ to: "/" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not build your plan");
@@ -145,6 +148,36 @@ function Onboarding() {
   ];
 
   const current = steps[Math.min(step, steps.length - 1)]!;
+
+  if (busy) {
+    return (
+      <main className="mx-auto grid min-h-screen max-w-md place-items-center px-8 text-center">
+        <div aria-live="polite">
+          <div className="mx-auto grid size-24 place-items-center rounded-full bg-cloud shadow-[var(--shadow-float)]">
+            {planReady ? (
+              <CheckCircle2 className="size-12 text-primary" />
+            ) : (
+              <LoaderCircle className="size-12 animate-spin text-accent" />
+            )}
+          </div>
+          <Sparkles className="mx-auto mt-7 size-6 animate-pulse text-xp" />
+          <h1 className="mt-3 font-hand text-4xl">
+            {planReady ? "Your plan is ready!" : "Building your recovery path…"}
+          </h1>
+          <p className="mt-3 text-sm font-bold text-muted-foreground">
+            {planReady
+              ? "Your first quests are waiting."
+              : "Your answers are being shaped into small, achievable goals made for you."}
+          </p>
+          {!planReady ? (
+            <div className="mx-auto mt-6 h-2 w-48 overflow-hidden rounded-full bg-muted">
+              <div className="h-full w-2/3 animate-pulse rounded-full bg-accent" />
+            </div>
+          ) : null}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="mx-auto min-h-screen max-w-md px-5 pt-10 pb-16">
