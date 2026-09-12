@@ -37,6 +37,14 @@ export type DailyCheckin = {
   message: string;
 };
 
+export type RecoveryEvent = {
+  id: string;
+  event_type: "quit" | "relapse";
+  event_date: string;
+  note: string | null;
+  created_at: string;
+};
+
 export function localDateString(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -59,6 +67,24 @@ export function useLatestCheckin(userId?: string) {
         .maybeSingle();
       if (error) throw error;
       return data as DailyCheckin | null;
+    },
+  });
+}
+
+export function useRecoveryEvents(userId?: string) {
+  return useQuery({
+    queryKey: ["recovery-events", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("recovery_events")
+        .select("id, event_type, event_date, note, created_at")
+        .eq("user_id", userId)
+        .order("event_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as RecoveryEvent[];
     },
   });
 }

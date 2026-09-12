@@ -1,10 +1,19 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Bell, CheckCircle2, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
 import { useAuth } from "@/lib/useAuth";
 import { useCompleteGoal, useGoals, useProfile, type Goal } from "@/lib/profile";
 import { googleCalendarUrl, toIcsDataUrl } from "@/lib/game";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/quests")({
   head: () => ({
@@ -84,17 +93,61 @@ function Quests() {
   const complete = useCompleteGoal(user?.id);
   const [scheduling, setScheduling] = useState<Goal | null>(null);
   const [when, setWhen] = useState("");
+  const [celebrating, setCelebrating] = useState<Goal | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    setNotificationsEnabled("Notification" in window && Notification.permission === "granted");
+  }, []);
+
+  async function enableNotifications() {
+    if (!("Notification" in window)) {
+      toast.error("Notifications are not supported on this device.");
+      return;
+    }
+    if (window.top !== window.self) {
+      toast.message("Open RESET in its own tab to enable notifications.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationsEnabled(permission === "granted");
+    if (permission === "granted") toast.success("Quest notifications are on.");
+    else toast.message("Notifications remain off. You can enable them in your browser settings.");
+  }
+
+  function celebrate(goal: Goal, leveledUp: boolean) {
+    setCelebrating(goal);
+    const title = leveledUp ? "Level up! Incredible work." : "Quest complete! You did it.";
+    toast.success(`${title} +${goal.xp_reward} XP and +${goal.gem_reward} gems`);
+    if (notificationsEnabled && "Notification" in window) {
+      new Notification("RESET · Quest complete", {
+        body: `${goal.title} · +${goal.xp_reward} XP · +${goal.gem_reward} gems`,
+        icon: "/favicon.png",
+      });
+    }
+  }
 
   const open = (goals ?? []).filter((g) => !g.completed);
   const done = (goals ?? []).filter((g) => g.completed);
 
   return (
     <AppShell header={<GemPill gems={profile?.gems ?? 0} name={profile?.display_name} />}>
-      <h1 className="mb-4 font-hand text-4xl">Quests</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="font-hand text-4xl">Quests</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-cloud font-bold"
+          onClick={enableNotifications}
+          disabled={notificationsEnabled}
+        >
+          <Bell className="size-4" /> {notificationsEnabled ? "Alerts on" : "Enable alerts"}
+        </Button>
+      </div>
 
       {open.length === 0 && done.length === 0 ? (
         <div className="cloud-card p-6 text-center">
@@ -112,12 +165,7 @@ function Quests() {
             goal={g}
             onComplete={() =>
               complete.mutate(g, {
-                onSuccess: (r) =>
-                  toast.success(
-                    r.leveledUp
-                      ? `Level up! +${g.xp_reward} xp, +${g.gem_reward} 💎`
-                      : `+${g.xp_reward} xp, +${g.gem_reward} 💎`,
-                  ),
+                onSuccess: (r) => celebrate(g, r.leveledUp),
                 onError: () => toast.error("Could not save that. Try again."),
               })
             }
@@ -188,6 +236,35 @@ function Quests() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!celebrating} onOpenChange={(open) => !open && setCelebrating(null)}>
+        <DialogContent className="max-w-sm rounded-lg text-center">
+          <DialogHeader className="items-center text-center">
+            <div className="relative grid size-20 place-items-center rounded-full bg-primary/15">
+              <Trophy className="size-10 text-xp" />
+              <Sparkles className="absolute -right-1 -top-1 size-6 text-accent" />
+            </div>
+            <DialogTitle className="font-hand text-4xl">Quest complete!</DialogTitle>
+            <DialogDescription className="text-base font-bold text-foreground">
+              {celebrating?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-md bg-muted p-3">
+              <p className="text-2xl font-black text-accent">+{celebrating?.xp_reward}</p>
+              <p className="text-xs font-bold text-muted-foreground">XP earned</p>
+            </div>
+            <div className="rounded-md bg-muted p-3">
+              <p className="text-2xl font-black">+{celebrating?.gem_reward} 💎</p>
+              <p className="text-xs font-bold text-muted-foreground">Gems earned</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">Every completed step is proof that you are moving forward.</p>
+          <Button className="btn-glossy w-full font-bold" onClick={() => setCelebrating(null)}>
+            <CheckCircle2 className="size-4" /> Keep going
+          </Button>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

@@ -172,6 +172,36 @@ export type Database = {
           },
         ]
       }
+      recovery_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          event_type: string
+          id: string
+          note: string | null
+          timezone_offset_minutes: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          event_type: string
+          id?: string
+          note?: string | null
+          timezone_offset_minutes: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          event_type?: string
+          id?: string
+          note?: string | null
+          timezone_offset_minutes?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       shop_items: {
         Row: {
           blurb: string | null
@@ -207,10 +237,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      log_recovery_relapse: {
+        Args: {
+          _note?: string
+          _relapse_date: string
+          _timezone_offset_minutes: number
+          _user_id: string
+        }
+        Returns: Json
+      }
       record_daily_checkin: {
         Args: {
           _checkin_date: string
           _stayed_addiction_free: boolean
+          _timezone_offset_minutes: number
+          _user_id: string
+        }
+        Returns: Json
+      }
+      start_recovery_attempt: {
+        Args: {
+          _quit_date: string
           _timezone_offset_minutes: number
           _user_id: string
         }

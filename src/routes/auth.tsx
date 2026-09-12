@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/lib/useAuth";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -34,6 +35,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/" });
@@ -51,6 +53,7 @@ function AuthPage() {
         });
         if (error) throw error;
         if (!data.session) {
+          setAwaitingVerification(true);
           toast.success("Check your email to confirm your account.");
         }
       } else {
@@ -59,6 +62,27 @@ function AuthPage() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendVerification() {
+    if (!email) {
+      toast.error("Enter your email address first.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      toast.success("Verification email resent. Check spam or junk too.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not resend the verification email");
     } finally {
       setBusy(false);
     }
@@ -105,7 +129,18 @@ function AuthPage() {
           Sign in with Google
         </button>
 
-        {mode === "none" ? (
+        {awaitingVerification ? (
+          <div className="cloud-card space-y-3 p-5 text-center">
+            <p className="font-hand text-3xl">Check your inbox</p>
+            <p className="text-sm text-muted-foreground">We sent a verification link to {email}. Check spam or junk if it is missing.</p>
+            <Button className="btn-glossy w-full" disabled={busy} onClick={resendVerification}>
+              {busy ? "Sending…" : "Resend verification email"}
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setAwaitingVerification(false)}>
+              Use another email
+            </Button>
+          </div>
+        ) : mode === "none" ? (
           <>
             <button
               onClick={() => setMode("signin")}
