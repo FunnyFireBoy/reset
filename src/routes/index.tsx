@@ -6,8 +6,9 @@ import { Flame, LifeBuoy, ShoppingBag, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { RecoveryProgress } from "@/components/RecoveryProgress";
 import { useAuth } from "@/lib/useAuth";
-import { localDateString, useGoals, useLatestCheckin, useProfile } from "@/lib/profile";
+import { localDateString, useGoals, useLatestCheckin, useProfile, useRecoveryEvents } from "@/lib/profile";
 import { recordDailyCheckin } from "@/lib/checkin.functions";
 import { levelFromXp, levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
 
@@ -60,6 +61,8 @@ function Home() {
   const openQuests = (goals ?? []).filter((g) => !g.completed).length;
   const today = localDateString();
   const checkedInToday = latestCheckin?.checkin_date === today;
+  const { data: recoveryEvents } = useRecoveryEvents(user?.id);
+  const recoveryActive = recoveryEvents?.[0]?.event_type === "quit";
   const todayLabel = new Intl.DateTimeFormat(undefined, {
     weekday: "long",
     month: "short",
@@ -103,6 +106,8 @@ function Home() {
         </Link>
       </div>
 
+      <RecoveryProgress userId={user?.id} />
+
       <section className="cloud-card mb-6 overflow-hidden" aria-labelledby="daily-checkin-title">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
@@ -116,6 +121,8 @@ function Home() {
         <div className="p-4">
           {checkinLoading ? (
             <p className="text-sm text-muted-foreground">Checking today’s progress…</p>
+          ) : !recoveryActive ? (
+            <p className="text-sm text-muted-foreground">Start your quit counter above before checking in.</p>
           ) : checkedInToday && latestCheckin ? (
             <div className="flex gap-3">
               <Sparkles className="mt-0.5 size-6 shrink-0 text-accent" />
@@ -132,12 +139,9 @@ function Home() {
             <>
               <p className="text-sm font-bold">Did you stay addiction-free today?</p>
               <p className="mt-1 text-xs text-muted-foreground">Check in honestly once a day. A successful day earns 20 XP.</p>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Button className="btn-glossy h-11 font-bold" onClick={() => checkIn(true)}>
+              <div className="mt-4">
+                <Button className="btn-glossy h-11 w-full font-bold" onClick={() => checkIn(true)}>
                   Yes, I did
-                </Button>
-                <Button variant="outline" className="h-11 bg-cloud font-bold" onClick={() => checkIn(false)}>
-                  Not today
                 </Button>
               </div>
             </>

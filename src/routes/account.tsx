@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { useProfile } from "@/lib/profile";
+import { useProfile, useRecoveryEvents } from "@/lib/profile";
 import { levelFromXp, levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
 import { Input } from "@/components/ui/input";
 
@@ -35,6 +35,7 @@ function Account() {
   const qc = useQueryClient();
   const { user, loading } = useAuth();
   const { data: profile } = useProfile(user?.id);
+  const { data: recoveryEvents } = useRecoveryEvents(user?.id);
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -133,6 +134,26 @@ function Account() {
         >
           Rebuild my plan
         </Link>
+      </div>
+
+      <div className="cloud-card mb-5 p-4">
+        <p className="font-bold">Recovery history</p>
+        <p className="mt-1 text-xs text-muted-foreground">Your attempts stay here so a relapse never erases your honest progress.</p>
+        {recoveryEvents && recoveryEvents.length > 0 ? (
+          <ol className="mt-4 space-y-3">
+            {recoveryEvents.map((event) => (
+              <li key={event.id} className="border-l-2 border-accent pl-3">
+                <p className="text-sm font-black">{event.event_type === "quit" ? "Quit started" : "Relapse logged"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${event.event_date}T12:00:00`))}
+                </p>
+                {event.note ? <p className="mt-1 text-sm">{event.note}</p> : null}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">No recovery attempt logged yet.</p>
+        )}
       </div>
 
       <Link to="/help" className="cloud-card mb-5 block p-4 text-sm font-bold">
