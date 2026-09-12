@@ -63,7 +63,10 @@ function Account() {
       .from("profiles")
       .update({ display_name: name.trim() || "Recruit" })
       .eq("user_id", user!.id);
-    if (error) return toast.error("Could not save your name");
+    if (error) {
+      toast.error("Could not save your name");
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["profile"] });
     toast.success("Saved");
   }
