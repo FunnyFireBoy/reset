@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_checkins: {
+        Row: {
+          checkin_date: string
+          created_at: string
+          id: string
+          message: string
+          stayed_addiction_free: boolean
+          streak_after: number
+          timezone_offset_minutes: number
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          checkin_date: string
+          created_at?: string
+          id?: string
+          message: string
+          stayed_addiction_free: boolean
+          streak_after?: number
+          timezone_offset_minutes: number
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          checkin_date?: string
+          created_at?: string
+          id?: string
+          message?: string
+          stayed_addiction_free?: boolean
+          streak_after?: number
+          timezone_offset_minutes?: number
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           completed: boolean
@@ -171,7 +207,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      record_daily_checkin: {
+        Args: {
+          _checkin_date: string
+          _stayed_addiction_free: boolean
+          _timezone_offset_minutes: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
