@@ -14,7 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      goals: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          gem_reward: number
+          id: string
+          kind: string
+          scheduled_at: string | null
+          title: string
+          user_id: string
+          xp_reward: number
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          gem_reward?: number
+          id?: string
+          kind?: string
+          scheduled_at?: string | null
+          title: string
+          user_id: string
+          xp_reward?: number
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          gem_reward?: number
+          id?: string
+          kind?: string
+          scheduled_at?: string | null
+          title?: string
+          user_id?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          active_character: string | null
+          addiction_type: string | null
+          created_at: string
+          display_name: string
+          frequency: string | null
+          gems: number
+          id: string
+          level: number
+          onboarded: boolean
+          triggers: string | null
+          updated_at: string
+          user_id: string
+          xp: number
+          years_addicted: string | null
+        }
+        Insert: {
+          active_character?: string | null
+          addiction_type?: string | null
+          created_at?: string
+          display_name?: string
+          frequency?: string | null
+          gems?: number
+          id?: string
+          level?: number
+          onboarded?: boolean
+          triggers?: string | null
+          updated_at?: string
+          user_id: string
+          xp?: number
+          years_addicted?: string | null
+        }
+        Update: {
+          active_character?: string | null
+          addiction_type?: string | null
+          created_at?: string
+          display_name?: string
+          frequency?: string | null
+          gems?: number
+          id?: string
+          level?: number
+          onboarded?: boolean
+          triggers?: string | null
+          updated_at?: string
+          user_id?: string
+          xp?: number
+          years_addicted?: string | null
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_items: {
+        Row: {
+          blurb: string | null
+          emoji: string
+          id: string
+          kind: string
+          min_level: number
+          name: string
+          price_gems: number
+        }
+        Insert: {
+          blurb?: string | null
+          emoji: string
+          id?: string
+          kind: string
+          min_level?: number
+          name: string
+          price_gems: number
+        }
+        Update: {
+          blurb?: string | null
+          emoji?: string
+          id?: string
+          kind?: string
+          min_level?: number
+          name?: string
+          price_gems?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
