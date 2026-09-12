@@ -212,6 +212,7 @@ export type Database = {
           _checkin_date: string
           _stayed_addiction_free: boolean
           _timezone_offset_minutes: number
+          _user_id: string
         }
         Returns: Json
       }
