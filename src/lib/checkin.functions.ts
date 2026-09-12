@@ -20,11 +20,11 @@ function isCheckinResult(value: unknown): value is CheckinResult {
   if (!value || typeof value !== "object") return false;
   const result = value as Record<string, unknown>;
   return (
-    typeof result.already_checked_in === "boolean" &&
-    typeof result.streak === "number" &&
-    typeof result.xp_awarded === "number" &&
-    typeof result.message === "string" &&
-    typeof result.stayed_addiction_free === "boolean"
+    typeof result["already_checked_in"] === "boolean" &&
+    typeof result["streak"] === "number" &&
+    typeof result["xp_awarded"] === "number" &&
+    typeof result["message"] === "string" &&
+    typeof result["stayed_addiction_free"] === "boolean"
   );
 }
 
