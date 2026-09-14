@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RESET</string>
+    <string name="title_activity_main">RESET</string>
+    <string name="package_name">com.lovable.reset</string>
+    <string name="custom_url_scheme">com.lovable.reset</string>
+</resources>

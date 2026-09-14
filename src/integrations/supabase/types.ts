@@ -50,6 +50,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_quest_batches: {
+        Row: {
+          created_at: string
+          quest_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          quest_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          quest_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           completed: boolean
@@ -59,6 +83,7 @@ export type Database = {
           gem_reward: number
           id: string
           kind: string
+          quest_date: string | null
           scheduled_at: string | null
           title: string
           user_id: string
@@ -72,6 +97,7 @@ export type Database = {
           gem_reward?: number
           id?: string
           kind?: string
+          quest_date?: string | null
           scheduled_at?: string | null
           title: string
           user_id: string
@@ -85,6 +111,7 @@ export type Database = {
           gem_reward?: number
           id?: string
           kind?: string
+          quest_date?: string | null
           scheduled_at?: string | null
           title?: string
           user_id?: string
@@ -237,6 +264,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_goal: { Args: { _goal_id: string }; Returns: Json }
       log_recovery_relapse: {
         Args: {
           _note?: string
