@@ -1,0 +1,1 @@
+ALTER FUNCTION public.complete_goal(uuid) SECURITY INVOKER;
