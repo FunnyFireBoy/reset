@@ -73,3 +73,15 @@ export function googleCalendarUrl(
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+export function levelReward(level: number) {
+  const milestone = level % 10 === 0;
+  const gems = 40 + level * 12 + (milestone ? level * 8 : 0);
+  const badge = milestone ? `Level ${level} badge` : level % 5 === 0 ? "Mystery character" : null;
+  return { gems, badge };
+}
+
+export function levelWindow(currentLevel: number, count = 8) {
+  const start = Math.max(1, currentLevel - 2);
+  return Array.from({ length: count }, (_, index) => start + index);
+}
