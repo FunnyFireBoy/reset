@@ -1,11 +1,15 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Bell, CheckCircle2, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
 import { useAuth } from "@/lib/useAuth";
-import { useCompleteGoal, useGoals, useProfile, type Goal } from "@/lib/profile";
+import { localDateString, useCompleteGoal, useGoals, useProfile, type Goal } from "@/lib/profile";
 import { googleCalendarUrl, toIcsDataUrl } from "@/lib/game";
+import { ensureDailyQuests } from "@/lib/plan.functions";
+import { nativeNotify, openCalendar, openDefaultCalendar, requestNotificationPermission } from "@/lib/native-bridge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -91,6 +95,8 @@ function Quests() {
   const { data: profile } = useProfile(user?.id);
   const { data: goals } = useGoals(user?.id);
   const complete = useCompleteGoal(user?.id);
+  const createDailyQuests = useServerFn(ensureDailyQuests);
+  const queryClient = useQueryClient();
   const [scheduling, setScheduling] = useState<Goal | null>(null);
   const [when, setWhen] = useState("");
   const [celebrating, setCelebrating] = useState<Goal | null>(null);
@@ -104,18 +110,22 @@ function Quests() {
     setNotificationsEnabled("Notification" in window && Notification.permission === "granted");
   }, []);
 
+  useEffect(() => {
+    if (!user || !profile?.onboarded) return;
+    const today = localDateString();
+    createDailyQuests({ data: { localDate: today, timezoneOffsetMinutes: new Date().getTimezoneOffset() } })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["goals", user.id, today] }))
+      .catch(() => toast.error("Today’s quests could not be loaded."));
+  }, [createDailyQuests, profile?.onboarded, queryClient, user]);
+
   async function enableNotifications() {
-    if (!("Notification" in window)) {
-      toast.error("Notifications are not supported on this device.");
-      return;
-    }
-    if (window.top !== window.self) {
+    if (window.top !== window.self && !("Notification" in window)) {
       toast.message("Open RESET in its own tab to enable notifications.");
       return;
     }
-    const permission = await Notification.requestPermission();
-    setNotificationsEnabled(permission === "granted");
-    if (permission === "granted") toast.success("Quest notifications are on.");
+    const granted = await requestNotificationPermission();
+    setNotificationsEnabled(granted);
+    if (granted) toast.success("Quest notifications are on.");
     else toast.message("Notifications remain off. You can enable them in your browser settings.");
   }
 
@@ -123,12 +133,7 @@ function Quests() {
     setCelebrating(goal);
     const title = leveledUp ? "Level up! Incredible work." : "Quest complete! You did it.";
     toast.success(`${title} +${goal.xp_reward} XP and +${goal.gem_reward} gems`);
-    if (notificationsEnabled && "Notification" in window) {
-      new Notification("RESET · Quest complete", {
-        body: `${goal.title} · +${goal.xp_reward} XP · +${goal.gem_reward} gems`,
-        icon: "/favicon.png",
-      });
-    }
+    if (notificationsEnabled) void nativeNotify("RESET · Quest complete", `${goal.title} · +${goal.xp_reward} XP · +${goal.gem_reward} gems`);
   }
 
   const open = (goals ?? []).filter((g) => !g.completed);
@@ -199,33 +204,25 @@ function Quests() {
               className="w-full rounded-md border border-border bg-background px-3 py-2"
             />
             <div className="grid grid-cols-2 gap-2">
-              <a
-                href={
-                  when
-                    ? googleCalendarUrl(
-                        scheduling.title,
-                        scheduling.description ?? "",
-                        new Date(when),
-                      )
-                    : "#"
-                }
-                target="_blank"
-                rel="noreferrer"
-                className={`btn-glossy py-2 text-center text-sm font-bold ${when ? "" : "pointer-events-none opacity-50"}`}
+              <Button
+                disabled={!when}
+                className="btn-glossy h-auto py-2 text-sm font-bold"
+                onClick={() => when && openCalendar(googleCalendarUrl(scheduling.title, scheduling.description ?? "", new Date(when)))}
               >
                 Google Calendar
-              </a>
-              <a
-                href={
-                  when
-                    ? toIcsDataUrl(scheduling.title, scheduling.description ?? "", new Date(when))
-                    : "#"
-                }
-                download="reset-quest.ics"
-                className={`rounded-md border-2 border-border bg-cloud py-2 text-center text-sm font-bold ${when ? "" : "pointer-events-none opacity-50"}`}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!when}
+                className="h-auto border-2 bg-cloud py-2 text-sm font-bold"
+                onClick={() => {
+                  if (!when) return;
+                  const start = new Date(when);
+                  void openDefaultCalendar(scheduling.title, scheduling.description ?? "", start, new Date(start.getTime() + 30 * 60000), toIcsDataUrl(scheduling.title, scheduling.description ?? "", start));
+                }}
               >
-                Apple / other
-              </a>
+                Device calendar
+              </Button>
             </div>
             <button
               onClick={() => setScheduling(null)}

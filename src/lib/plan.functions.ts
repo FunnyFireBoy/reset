@@ -162,6 +162,14 @@ export const generatePlan = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("goals").insert(items);
     if (error) throw new Error(error.message);
 
+    const { error: batchError } = await context.supabase.from("daily_quest_batches").upsert({
+      user_id: context.userId,
+      quest_date: data.localDate,
+      status: "ready",
+      updated_at: new Date().toISOString(),
+    });
+    if (batchError) throw new Error(batchError.message);
+
     const { error: pErr } = await context.supabase
       .from("profiles")
       .update({

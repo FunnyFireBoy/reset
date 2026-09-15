@@ -10,7 +10,8 @@ import { RecoveryProgress } from "@/components/RecoveryProgress";
 import { useAuth } from "@/lib/useAuth";
 import { localDateString, useGoals, useLatestCheckin, useProfile, useRecoveryEvents } from "@/lib/profile";
 import { recordDailyCheckin } from "@/lib/checkin.functions";
-import { levelFromXp, levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
+import { levelFromXp, levelProgress, levelReward, levelWindow, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
+import { ensureDailyQuests } from "@/lib/plan.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,10 +34,9 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const LEVELS = Array.from({ length: 10 }, (_, i) => i + 1);
-
 function rewardFor(level: number) {
-  return `${level * 50} gems\n${level * 15} xp`;
+  const reward = levelReward(level);
+  return `${reward.gems} gems${reward.badge ? `\n${reward.badge}` : ""}`;
 }
 
 function Home() {
@@ -46,6 +46,7 @@ function Home() {
   const { data: goals } = useGoals(user?.id);
   const { data: latestCheckin, isLoading: checkinLoading } = useLatestCheckin(user?.id);
   const saveCheckin = useServerFn(recordDailyCheckin);
+  const createDailyQuests = useServerFn(ensureDailyQuests);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -58,6 +59,7 @@ function Home() {
 
   const xp = profile?.xp ?? 0;
   const level = levelFromXp(xp);
+  const levels = levelWindow(level);
   const openQuests = (goals ?? []).filter((g) => !g.completed).length;
   const today = localDateString();
   const checkedInToday = latestCheckin?.checkin_date === today;
@@ -68,6 +70,25 @@ function Home() {
     month: "short",
     day: "numeric",
   }).format(new Date());
+
+  useEffect(() => {
+    if (!user || !profile?.onboarded) return;
+    let active = true;
+    createDailyQuests({
+      data: { localDate: today, timezoneOffsetMinutes: new Date().getTimezoneOffset() },
+    })
+      .then((result) => {
+        if (active && result.status === "ready") {
+          queryClient.invalidateQueries({ queryKey: ["goals", user.id, today] });
+        }
+      })
+      .catch(() => {
+        if (active) toast.error("Today’s quests could not be refreshed. Try again shortly.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [createDailyQuests, profile?.onboarded, queryClient, today, user]);
 
   async function checkIn(stayedAddictionFree: boolean) {
     try {
@@ -172,7 +193,7 @@ function Home() {
       <div className="relative pt-6 pb-10">
         <div className="absolute inset-y-0 left-1/2 w-2.5 -translate-x-1/2 rounded-full bg-accent" />
         <ul className="relative flex flex-col-reverse gap-24">
-          {LEVELS.map((lvl) => {
+          {levels.map((lvl) => {
             const reached = level >= lvl;
             const left = lvl % 2 === 1;
             return (
