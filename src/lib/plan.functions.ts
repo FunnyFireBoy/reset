@@ -7,6 +7,12 @@ const PlanInput = z.object({
   triggers: z.string().min(1),
   yearsAddicted: z.string().min(1),
   frequency: z.string().min(1),
+  localDate: z.string().date(),
+});
+
+const DailyPlanInput = z.object({
+  localDate: z.string().date(),
+  timezoneOffsetMinutes: z.number().int().min(-840).max(840),
 });
 
 type PlanItem = {
@@ -108,6 +114,18 @@ async function callGateway(prompt: string, apiKey: string) {
   return text;
 }
 
+function safeItems(items: PlanItem[], userId: string, questDate: string, limit = 8) {
+  return items.slice(0, limit).map((item) => ({
+    user_id: userId,
+    quest_date: questDate,
+    title: String(item.title).slice(0, 120),
+    description: String(item.description ?? "").slice(0, 400),
+    kind: item.kind === "goal" ? "goal" : "activity",
+    xp_reward: Math.max(5, Math.min(80, Number(item.xp_reward) || 15)),
+    gem_reward: Math.max(10, Math.min(400, Number(item.gem_reward) || 50)),
+  }));
+}
+
 export const generatePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => PlanInput.parse(data))
@@ -131,14 +149,7 @@ export const generatePlan = createServerFn({ method: "POST" })
       throw new Error("The coach returned an unreadable plan. Please try again.");
     }
 
-    const items = (parsed.items ?? []).slice(0, 10).map((i) => ({
-      user_id: context.userId,
-      title: String(i.title).slice(0, 120),
-      description: String(i.description ?? "").slice(0, 400),
-      kind: i.kind === "goal" ? "goal" : "activity",
-      xp_reward: Math.max(5, Math.min(80, Number(i.xp_reward) || 15)),
-      gem_reward: Math.max(10, Math.min(400, Number(i.gem_reward) || 50)),
-    }));
+    const items = safeItems(parsed.items ?? [], context.userId, data.localDate);
 
     if (items.length === 0) throw new Error("No plan was generated. Please try again.");
 
@@ -164,4 +175,70 @@ export const generatePlan = createServerFn({ method: "POST" })
     if (pErr) throw new Error(pErr.message);
 
     return { summary: parsed.summary ?? "", count: items.length };
+  });
+
+export const ensureDailyQuests = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DailyPlanInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: existing } = await context.supabase
+      .from("daily_quest_batches")
+      .select("status")
+      .eq("user_id", context.userId)
+      .eq("quest_date", data.localDate)
+      .maybeSingle();
+    if (existing) return { status: existing.status, created: false };
+
+    const { error: claimError } = await context.supabase.from("daily_quest_batches").insert({
+      user_id: context.userId,
+      quest_date: data.localDate,
+      status: "generating",
+    });
+    if (claimError) {
+      if (claimError.code === "23505") return { status: "generating", created: false };
+      throw new Error(claimError.message);
+    }
+
+    try {
+      const apiKey = process.env["LOVABLE_API_KEY"];
+      if (!apiKey) throw new Error("AI is not configured yet.");
+      const { data: profile, error: profileError } = await context.supabase
+        .from("profiles")
+        .select("addiction_type, triggers, years_addicted, frequency, onboarded")
+        .eq("user_id", context.userId)
+        .single();
+      if (profileError) throw new Error(profileError.message);
+      if (!profile.onboarded) return { status: "needs_onboarding", created: false };
+
+      const raw = await callGateway(
+        [
+          `Today is ${data.localDate} (UTC offset ${data.timezoneOffsetMinutes} minutes).`,
+          `Addiction: ${profile.addiction_type ?? "not specified"}`,
+          `Triggers: ${profile.triggers ?? "not specified"}`,
+          `Addicted for: ${profile.years_addicted ?? "not specified"}`,
+          `Frequency: ${profile.frequency ?? "not specified"}`,
+          "Create a fresh set for today. Do not rely on yesterday's progress. Return the plan as json.",
+        ].join("\n"),
+        apiKey,
+      );
+      const parsed = JSON.parse(raw) as { items?: PlanItem[] };
+      const items = safeItems(parsed.items ?? [], context.userId, data.localDate, 8);
+      if (items.length === 0) throw new Error("No daily quests were generated.");
+      const { error: insertError } = await context.supabase.from("goals").insert(items);
+      if (insertError) throw new Error(insertError.message);
+      const { error: readyError } = await context.supabase
+        .from("daily_quest_batches")
+        .update({ status: "ready", updated_at: new Date().toISOString() })
+        .eq("user_id", context.userId)
+        .eq("quest_date", data.localDate);
+      if (readyError) throw new Error(readyError.message);
+      return { status: "ready", created: true };
+    } catch (error) {
+      await context.supabase
+        .from("daily_quest_batches")
+        .delete()
+        .eq("user_id", context.userId)
+        .eq("quest_date", data.localDate);
+      throw error;
+    }
   });

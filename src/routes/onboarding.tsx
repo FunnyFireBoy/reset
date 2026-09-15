@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, LoaderCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generatePlan } from "@/lib/plan.functions";
 import { useAuth } from "@/lib/useAuth";
 import { ADDICTIONS, DURATIONS, FREQUENCIES } from "@/lib/game";
+import { localDateString, type Profile } from "@/lib/profile";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/onboarding")({
@@ -33,6 +35,7 @@ function Onboarding() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const run = useServerFn(generatePlan);
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [addictionType, setAddictionType] = useState("");
   const [yearsAddicted, setYears] = useState("");
@@ -48,7 +51,20 @@ function Onboarding() {
   async function finish() {
     setBusy(true);
     try {
-      await run({ data: { addictionType, triggers, yearsAddicted, frequency } });
+      await run({
+        data: { addictionType, triggers, yearsAddicted, frequency, localDate: localDateString() },
+      });
+      if (user) {
+        queryClient.setQueryData<Profile | null>(["profile", user.id], (current) =>
+          current
+            ? { ...current, addiction_type: addictionType, triggers, years_addicted: yearsAddicted, frequency, onboarded: true }
+            : current,
+        );
+        await Promise.all([
+          queryClient.refetchQueries({ queryKey: ["profile", user.id] }),
+          queryClient.refetchQueries({ queryKey: ["goals", user.id] }),
+        ]);
+      }
       setPlanReady(true);
       await new Promise((resolve) => window.setTimeout(resolve, 900));
       navigate({ to: "/" });

@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { levelFromXp } from "./game";
 
 export type Profile = {
   id: string;
@@ -27,6 +26,7 @@ export type Goal = {
   completed: boolean;
   completed_at: string | null;
   scheduled_at: string | null;
+  quest_date: string | null;
 };
 
 export type DailyCheckin = {
@@ -107,8 +107,9 @@ export function useProfile(userId?: string) {
 }
 
 export function useGoals(userId?: string) {
+  const today = localDateString();
   return useQuery({
-    queryKey: ["goals", userId],
+    queryKey: ["goals", userId, today],
     enabled: !!userId,
     queryFn: async () => {
       if (!userId) return [];
@@ -116,6 +117,7 @@ export function useGoals(userId?: string) {
         .from("goals")
         .select("*")
         .eq("user_id", userId)
+        .eq("quest_date", today)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Goal[];
@@ -128,29 +130,10 @@ export function useCompleteGoal(userId?: string) {
   return useMutation({
     mutationFn: async (goal: Goal) => {
       if (!userId) throw new Error("Sign in to complete a goal");
-      const { data: profile, error: pErr } = await supabase
-        .from("profiles")
-        .select("xp, gems")
-        .eq("user_id", userId)
-        .single();
-      if (pErr) throw pErr;
-
-      const xp = profile.xp + goal.xp_reward;
-      const gems = profile.gems + goal.gem_reward;
-
-      const { error: gErr } = await supabase
-        .from("goals")
-        .update({ completed: true, completed_at: new Date().toISOString() })
-        .eq("id", goal.id);
-      if (gErr) throw gErr;
-
-      const { error: uErr } = await supabase
-        .from("profiles")
-        .update({ xp, gems, level: levelFromXp(xp) })
-        .eq("user_id", userId);
-      if (uErr) throw uErr;
-
-      return { xp, gems, leveledUp: levelFromXp(xp) > levelFromXp(profile.xp) };
+      const { data, error } = await supabase.rpc("complete_goal", { _goal_id: goal.id });
+      if (error) throw error;
+      const result = data as { xp: number; gems: number; leveled_up: boolean; already_completed: boolean };
+      return { xp: result.xp, gems: result.gems, leveledUp: result.leveled_up, alreadyCompleted: result.already_completed };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["goals"] });
