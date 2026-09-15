@@ -100,6 +100,18 @@ function AuthPage() {
     navigate({ to: "/" });
   }
 
+  async function apple() {
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast.error("Apple sign-in failed. Try email instead.");
+      return;
+    }
+    if (result.redirected) return;
+    navigate({ to: "/" });
+  }
+
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-6 pt-16 pb-10">
       <h1 className="text-center font-display text-6xl font-bold text-cloud">RESET</h1>
@@ -128,6 +140,11 @@ function AuthPage() {
           </span>
           Sign in with Google
         </button>
+
+        <Button onClick={apple} className="w-full bg-foreground py-3 font-bold text-background hover:bg-foreground/90">
+          <span className="text-xl" aria-hidden="true">●</span>
+          Sign in with Apple
+        </Button>
 
         {awaitingVerification ? (
           <div className="cloud-card space-y-3 p-5 text-center">

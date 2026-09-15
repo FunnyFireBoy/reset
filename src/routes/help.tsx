@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { openMap } from "@/lib/native-bridge";
 
 export const Route = createFileRoute("/help")({
   head: () => ({
@@ -59,15 +61,13 @@ function Help() {
 
       <div className="space-y-3">
         {SEARCHES.map((s) => (
-          <a
+          <Button
             key={s.q}
-            href={`https://www.google.com/maps/search/${encodeURIComponent(`${s.q} ${place}`)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-glossy block px-4 py-3 text-center font-bold"
+            onClick={() => openMap(`${s.q} ${place}`)}
+            className="btn-glossy h-auto w-full px-4 py-3 text-center font-bold"
           >
             {s.label}
-          </a>
+          </Button>
         ))}
       </div>
 

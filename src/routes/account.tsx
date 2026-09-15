@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/useAuth";
 import { useProfile, useRecoveryEvents } from "@/lib/profile";
 import { levelFromXp, levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { cancelDailyReminder, isNative, scheduleDailyReminder } from "@/lib/native-bridge";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -37,6 +39,8 @@ function Account() {
   const { data: profile } = useProfile(user?.id);
   const { data: recoveryEvents } = useRecoveryEvents(user?.id);
   const [name, setName] = useState("");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState("09:00");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -45,6 +49,11 @@ function Account() {
   useEffect(() => {
     if (profile) setName(profile.display_name);
   }, [profile]);
+
+  useEffect(() => {
+    setReminderEnabled(window.localStorage.getItem("reset-daily-reminder") === "on");
+    setReminderTime(window.localStorage.getItem("reset-daily-reminder-time") ?? "09:00");
+  }, []);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", user?.id],
@@ -60,16 +69,41 @@ function Account() {
   });
 
   async function saveName() {
+    if (!user) return;
     const { error } = await supabase
       .from("profiles")
       .update({ display_name: name.trim() || "Recruit" })
-      .eq("user_id", user!.id);
+        .eq("user_id", user.id);
     if (error) {
       toast.error("Could not save your name");
       return;
     }
     qc.invalidateQueries({ queryKey: ["profile"] });
     toast.success("Saved");
+  }
+
+  async function updateReminder(enabled: boolean, time = reminderTime) {
+    if (!isNative) {
+      toast.message("Daily phone reminders are available in the Android app.");
+      return;
+    }
+    if (!enabled) {
+      await cancelDailyReminder();
+      setReminderEnabled(false);
+      window.localStorage.setItem("reset-daily-reminder", "off");
+      toast.success("Daily reminder turned off.");
+      return;
+    }
+    const [hour, minute] = time.split(":").map(Number);
+    const scheduled = await scheduleDailyReminder(hour || 9, minute || 0);
+    if (!scheduled) {
+      toast.error("Notification permission is needed for daily reminders.");
+      return;
+    }
+    setReminderEnabled(true);
+    window.localStorage.setItem("reset-daily-reminder", "on");
+    window.localStorage.setItem("reset-daily-reminder-time", time);
+    toast.success(`Daily reminder set for ${time}.`);
   }
 
   const xp = profile?.xp ?? 0;
@@ -86,6 +120,23 @@ function Account() {
         <p className="mt-2 text-sm text-muted-foreground">
           {xpIntoLevel(xp)}/{XP_PER_LEVEL} xp to the next level · {profile?.gems ?? 0} gems
         </p>
+      </div>
+
+      <div className="cloud-card mb-5 space-y-3 p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-bold">Daily recovery reminder</p>
+            <p className="text-xs text-muted-foreground">A supportive prompt to check in and view fresh quests.</p>
+          </div>
+          <Switch checked={reminderEnabled} onCheckedChange={updateReminder} aria-label="Daily recovery reminder" />
+        </div>
+        <Input
+          type="time"
+          value={reminderTime}
+          onChange={(event) => setReminderTime(event.target.value)}
+          onBlur={() => reminderEnabled && updateReminder(true, reminderTime)}
+          disabled={!reminderEnabled}
+        />
       </div>
 
       <div className="cloud-card mb-5 space-y-3 p-4">
