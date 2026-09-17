@@ -37,7 +37,7 @@ export function BottomNav() {
   ] as const;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md page-enter">
       <div className="relative bg-cloud pt-3 pb-3">
         <CloudBand />
         <ul className="relative grid grid-cols-3">
@@ -47,7 +47,7 @@ export function BottomNav() {
               <li key={to} className="flex justify-center">
                 <Link
                   to={to}
-                  className={`flex flex-col items-center gap-0.5 px-3 ${
+                  className={`flex flex-col items-center gap-0.5 px-3 transition-transform hover:-translate-y-1 ${
                     active ? "text-accent" : "text-foreground/70"
                   }`}
                 >
@@ -75,7 +75,7 @@ export function AppShell({
       {header ? (
         <header className="sticky top-0 z-20 flex justify-end px-4 pt-4 pb-2">{header}</header>
       ) : null}
-      <main className="flex-1 px-4 pb-36">{children}</main>
+      <main className="page-enter flex-1 px-4 pb-36">{children}</main>
       <BottomNav />
     </div>
   );

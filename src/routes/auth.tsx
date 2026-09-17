@@ -7,6 +7,14 @@ import { useAuth } from "@/lib/useAuth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+function AppleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6 fill-current" aria-hidden="true">
+      <path d="M18.71 12.71c.02-2.14 1.75-3.17 1.83-3.22a3.94 3.94 0 0 0-3.1-1.68c-1.3-.14-2.56.78-3.22.78-.67 0-1.69-.76-2.79-.74a4.1 4.1 0 0 0-3.45 2.1c-1.49 2.58-.38 6.38 1.05 8.46.72 1.02 1.56 2.15 2.66 2.11 1.08-.04 1.48-.68 2.78-.68 1.29 0 1.67.68 2.8.65 1.16-.02 1.89-1.02 2.58-2.05a8.4 8.4 0 0 0 1.18-2.42 3.7 3.7 0 0 1-2.32-3.31ZM16.59 6.43a3.78 3.78 0 0 0 .87-2.71 3.85 3.85 0 0 0-2.5 1.29 3.61 3.61 0 0 0-.9 2.61 3.2 3.2 0 0 0 2.53-1.19Z" />
+    </svg>
+  );
+}
+
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
@@ -113,7 +121,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col px-6 pt-16 pb-10">
+    <div className="page-enter mx-auto flex min-h-screen max-w-md flex-col px-6 pt-16 pb-10">
       <h1 className="text-center font-display text-6xl font-bold text-cloud">RESET</h1>
 
       <div className="flex flex-1 items-center justify-center py-8">
@@ -141,8 +149,8 @@ function AuthPage() {
           Sign in with Google
         </button>
 
-        <Button onClick={apple} className="w-full bg-foreground py-3 font-bold text-background hover:bg-foreground/90">
-          <span className="text-xl" aria-hidden="true">●</span>
+        <Button onClick={apple} className="h-14 w-full rounded-full bg-foreground text-lg font-semibold text-background shadow-[var(--shadow-float)] hover:bg-foreground/90">
+          <AppleMark />
           Sign in with Apple
         </Button>
 

@@ -8,11 +8,12 @@
 - [x] Diagnose verification delivery and add resend-verification support
 - [x] Add congratulatory messages and notifications when quests are completed
 
-- [ ] Fix the first-time onboarding transition
-- [ ] Generate one tailored quest set per local day
-- [ ] Make levels unlimited with generated milestone rewards
-- [ ] Make quest reward claims atomic
-- [ ] Add Google Maps and separate Google/default calendar actions
-- [ ] Add daily Android reminder settings and notifications
-- [ ] Add Apple sign-in
+- [x] Fix the first-time onboarding transition
+- [x] Generate one tailored quest set per local day
+- [x] Make levels unlimited with generated milestone rewards
+- [x] Make quest reward claims atomic
+- [x] Add Google Maps and separate Google/default calendar actions
+- [x] Add daily Android reminder settings and notifications
+- [x] Add Apple sign-in
+- [ ] Add custom addiction entry, app-wide motion, Apple-style sign-in, and first-use notification prompt
 - [ ] Package and verify the web app and Android APK
