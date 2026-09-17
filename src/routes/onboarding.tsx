@@ -9,6 +9,8 @@ import { useAuth } from "@/lib/useAuth";
 import { ADDICTIONS, DURATIONS, FREQUENCIES } from "@/lib/game";
 import { localDateString, type Profile } from "@/lib/profile";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -38,6 +40,7 @@ function Onboarding() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [addictionType, setAddictionType] = useState("");
+  const [customAddiction, setCustomAddiction] = useState("");
   const [yearsAddicted, setYears] = useState("");
   const [frequency, setFrequency] = useState("");
   const [triggers, setTriggers] = useState("");
@@ -49,15 +52,20 @@ function Onboarding() {
   }, [loading, user, navigate]);
 
   async function finish() {
+    const selectedAddiction = addictionType === "Something else" ? customAddiction.trim() : addictionType;
+    if (!selectedAddiction) {
+      toast.error("Tell us what you want to reset first.");
+      return;
+    }
     setBusy(true);
     try {
       await run({
-        data: { addictionType, triggers, yearsAddicted, frequency, localDate: localDateString() },
+        data: { addictionType: selectedAddiction, triggers, yearsAddicted, frequency, localDate: localDateString() },
       });
       if (user) {
         queryClient.setQueryData<Profile | null>(["profile", user.id], (current) =>
           current
-            ? { ...current, addiction_type: addictionType, triggers, years_addicted: yearsAddicted, frequency, onboarded: true }
+            ? { ...current, addiction_type: selectedAddiction, triggers, years_addicted: yearsAddicted, frequency, onboarded: true }
             : current,
         );
         await Promise.all([
@@ -81,20 +89,43 @@ function Onboarding() {
       body: (
         <div className="grid grid-cols-2 gap-3">
           {ADDICTIONS.map((a) => (
-            <button
+            <Button
+              variant="ghost"
               key={a.value}
               onClick={() => {
                 setAddictionType(a.label);
-                setStep(1);
+                if (a.value !== "other") setStep(1);
               }}
-              className={`cloud-card p-4 text-left ${
+              className={`cloud-card h-auto min-h-24 flex-col items-start whitespace-normal p-4 text-left hover:-translate-y-1 hover:bg-cloud ${
                 addictionType === a.label ? "ring-4 ring-accent" : ""
               }`}
             >
               <div className="text-3xl">{a.emoji}</div>
               <div className="mt-1 text-sm font-bold">{a.label}</div>
-            </button>
+            </Button>
           ))}
+          {addictionType === "Something else" ? (
+            <div className="cloud-card col-span-2 space-y-3 p-4 soft-pop">
+              <label htmlFor="custom-addiction" className="block text-sm font-bold">
+                What would you like to quit?
+              </label>
+              <Input
+                id="custom-addiction"
+                autoFocus
+                value={customAddiction}
+                onChange={(event) => setCustomAddiction(event.target.value)}
+                placeholder="Type it here"
+                maxLength={80}
+              />
+              <Button
+                className="btn-glossy h-11 w-full font-bold"
+                disabled={customAddiction.trim().length < 2}
+                onClick={() => setStep(1)}
+              >
+                Continue
+              </Button>
+            </div>
+          ) : null}
         </div>
       ),
     },
@@ -198,7 +229,7 @@ function Onboarding() {
   if (!current) return null;
 
   return (
-    <div className="mx-auto min-h-screen max-w-md px-5 pt-10 pb-16">
+    <div className="page-enter mx-auto min-h-screen max-w-md px-5 pt-10 pb-16">
       <p className="font-hand text-xl text-foreground/70">Step {step + 1} of 4</p>
       <h1 className="mb-6 font-hand text-4xl leading-tight">{current.q}</h1>
       {current.body}

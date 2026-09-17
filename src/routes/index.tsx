@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { RecoveryProgress } from "@/components/RecoveryProgress";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { useAuth } from "@/lib/useAuth";
 import { localDateString, useGoals, useLatestCheckin, useProfile, useRecoveryEvents } from "@/lib/profile";
 import { recordDailyCheckin } from "@/lib/checkin.functions";
@@ -112,6 +113,7 @@ function Home() {
 
   return (
     <AppShell header={<GemPill gems={profile?.gems ?? 0} name={profile?.display_name} />}>
+      <NotificationPrompt ready={Boolean(user && profile?.onboarded)} />
       <div className="mb-4 flex items-center gap-2">
         <Link
           to="/shop"
