@@ -149,7 +149,7 @@ function AuthPage() {
           Sign in with Google
         </button>
 
-        <Button onClick={apple} className="h-14 w-full rounded-full bg-foreground text-lg font-semibold text-background shadow-[var(--shadow-float)] hover:bg-foreground/90">
+        <Button onClick={apple} className="h-14 w-full rounded-full bg-apple text-lg font-semibold text-cloud shadow-[var(--shadow-float)] hover:bg-apple/90">
           <AppleMark />
           Sign in with Apple
         </Button>
