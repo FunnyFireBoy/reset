@@ -15,5 +15,5 @@
 - [x] Add Google Maps and separate Google/default calendar actions
 - [x] Add daily Android reminder settings and notifications
 - [x] Add Apple sign-in
-- [ ] Add custom addiction entry, app-wide motion, Apple-style sign-in, and first-use notification prompt
+- [x] Add custom addiction entry, app-wide motion, Apple-style sign-in, and first-use notification prompt
 - [ ] Package and verify the web app and Android APK

@@ -43,6 +43,7 @@
   --color-parchment-foreground: var(--parchment-foreground);
   --color-gem: var(--gem);
   --color-xp: var(--xp);
+  --color-apple: var(--apple);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -84,6 +85,7 @@
   --parchment-foreground: oklch(0.25 0.03 60);
   --gem: oklch(0.66 0.19 249);
   --xp: oklch(0.72 0.17 86);
+  --apple: oklch(0 0 0);
   --sidebar: oklch(0.965 0.014 200);
   --sidebar-foreground: oklch(0.27 0.035 235);
   --sidebar-primary: oklch(0.63 0.098 196);
