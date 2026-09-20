@@ -58,6 +58,8 @@ export function useLatestCheckin(userId?: string) {
     enabled: !!userId,
     queryFn: async () => {
       if (!userId) return null;
+      const { error: rewardError } = await supabase.rpc("claim_level_rewards");
+      if (rewardError) throw rewardError;
       const { data, error } = await supabase
         .from("daily_checkins")
         .select("checkin_date, stayed_addiction_free, streak_after, xp_awarded, message")
