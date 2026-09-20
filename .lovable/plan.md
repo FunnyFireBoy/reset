@@ -1,56 +1,47 @@
-# Daily recovery, native reminders, and Android build
+# Daily item shop and level rewards
 
 ## Goal
-Fix the first-time onboarding bounce, keep recovery fresh with tailored daily quests and unlimited progression, add reliable phone reminders and native app links, enable Apple sign-in, and package RESET for web and Android.
+Turn the static shop and placeholder level rewards into a replayable progression system: a fresh daily selection, visible rarity, automatic level unlocks, and an interactive level path with game-like motion.
 
 ## What will change
 
-### 1. Fix the onboarding bounce
-- Update the signed-in profile cache immediately when plan generation finishes.
-- Refresh the profile and quests before opening Home, so Home never sees the old “not onboarded” state.
-- Keep the full-screen “plan ready” transition while the fresh data is prepared.
+### 1. Daily rotating shop
+- Give each catalogue item a rarity: Common, Uncommon, Rare, Epic, or Legendary.
+- Show a limited daily lineup selected deterministically from the date, so every user sees a stable shop for that day and items return on future rotations.
+- Weight the lineup so rare items appear much less often, while guaranteeing useful character and badge choices.
+- Add a daily reset countdown, rarity styling, and a clear owned/locked/available state.
+- Keep gift cards excluded.
 
-### 2. Generate a fresh daily quest set
-- Add a dated daily quest batch so each user receives one tailored set per local calendar day.
-- Generate new goals and short activities from the user’s addiction, triggers, duration, and frequency.
-- Make generation idempotent so refreshes or two open devices cannot create duplicate daily sets.
-- Keep completed historical quests, while the Quests screen emphasizes today’s open and completed work.
-- Generate safe XP and gem rewards for every quest within controlled ranges.
+### 2. Safe purchases and real collections
+- Move gem spending and ownership creation into one protected database action, preventing duplicate purchases or partial gem deductions.
+- Refresh the profile and collection immediately after a successful unlock.
+- Present characters and badges separately in the profile, including both purchased and level-earned rewards.
 
-### 3. Unlimited levels and generated rewards
-- Keep levels calculated from total XP with no maximum.
-- Replace the fixed ten-level path with a moving window around the user’s current level.
-- Show algorithmically generated milestone rewards for upcoming levels without creating a hard level cap.
-- Award quest XP and gems atomically so repeated taps cannot duplicate rewards.
+### 3. Automatic level rewards
+- Record claimed level milestones so each reward is granted once.
+- Automatically reconcile unclaimed rewards when the profile loads, including levels already reached before this update.
+- Keep progression infinite by generating rewards from repeatable milestone rules rather than a fixed maximum level.
+- Make character and badge milestones appear as real collection entries, not only text labels.
 
-### 4. Native links, calendars, and daily phone reminders
-- Open nearby-support searches in the installed Google Maps app when available, with a browser fallback.
-- Add real Google Calendar event creation so scheduled quests appear in the connected Google account.
-- Keep a separate default-calendar option that opens the device calendar with the quest details and chosen time.
-- Add a reminder setting with permission handling and a chosen daily time.
-- On Android and iPhone, schedule rotating, supportive local notifications that invite the user back for a check-in and daily quests.
-- Keep browser quest-completion notifications as a graceful web fallback; background daily web push is not included because phone notifications were selected.
+### 4. Interactive level path
+- Add a horizontally scrollable level path centered near the current level, with controls to browse backward and forward indefinitely.
+- Let users tap a level to inspect its XP target, gem reward, character or badge reward, and earned/next/locked state.
+- Preserve the existing account information and recovery history below the progression area.
 
-### 5. Apple sign-in
-- Add “Sign in with Apple” beside Google and email sign-in.
-- Enable managed Apple authentication in Lovable Cloud, with the same safe public callback flow as Google.
-
-### 6. Web and Android packaging
-- Keep the current published web app as the shared online experience.
-- Add a Capacitor native shell, app icon assets, safe-area support, external-browser handling, and local-notification support.
-- Produce an Android debug APK artifact for installation/testing.
-- Do not create or package an iOS project.
+### 5. Video-game motion
+- Add rarity shimmer, reward pop, item reveal, selected-level focus, and progress-fill animations.
+- Keep motion lightweight and tactile, with reduced-motion support and stable mobile layouts.
 
 ## Technical details
-- Add a migration for dated quest batches/quest dates and an atomic quest-completion database function, with authenticated grants, row security, and service access.
-- Add protected server functions for daily generation; AI credentials remain server-only.
-- Use local date and timezone offset when selecting each day’s batch.
-- Use Capacitor Local Notifications for recurring phone reminders and Capacitor Browser/App APIs for native links.
-- Use per-user Google authorization for real Google Calendar writes; keep device-calendar links as a separate no-connection option.
-- Configure the native shell to load the published RESET origin so existing authentication and server-powered AI continue working without duplicating the backend.
+- Add rarity and stable rotation data to shop items, plus a private per-user level reward ledger with explicit grants and row-level security.
+- Add protected database functions for atomic purchases and idempotent level-reward claiming.
+- Use a seeded date hash and rarity weights for the daily selection; do not create duplicate catalogue rows every day.
+- Use semantic design tokens for every rarity treatment and existing shared controls for interactions.
 
 ## Verification
-- Reproduce the first-time flow and confirm it transitions onboarding → Home once, without bouncing back.
-- Confirm one daily batch per user/date, no duplicate reward on repeated completion, and progression above level 10.
-- Test reminder permission and scheduling states, Google and default-calendar paths, maps links, Google/Apple buttons, and key mobile layouts.
-- Check the latest build/runtime logs, run focused tests, build the web app, and generate the Android APK.
+- Confirm the lineup remains unchanged during one local day and changes on the next seeded date.
+- Confirm rare items occur less frequently across a multi-day deterministic test.
+- Confirm duplicate purchase taps cannot double-charge gems.
+- Confirm existing high-level users receive each missed reward exactly once and see it in their collection.
+- Confirm the level path scrolls, opens details, and remains usable on phone and desktop sizes.
+- Check current build, runtime, and backend security diagnostics.

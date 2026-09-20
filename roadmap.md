@@ -17,3 +17,9 @@
 - [x] Add Apple sign-in
 - [x] Add custom addiction entry, app-wide motion, Apple-style sign-in, and first-use notification prompt
 - [ ] Package and verify the web app and Android APK
+
+- [ ] Add a deterministic daily rotating shop with rarity and returning items
+- [ ] Grant character and badge rewards when levels are reached
+- [ ] Add an interactive, scrollable infinite level reward path
+- [ ] Add game-like reward, shop, and level animations
+- [ ] Verify purchase safety, collection updates, and mobile layouts
