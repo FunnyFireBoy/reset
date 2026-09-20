@@ -77,11 +77,59 @@ export function googleCalendarUrl(
 export function levelReward(level: number) {
   const milestone = level % 10 === 0;
   const gems = 40 + level * 12 + (milestone ? level * 8 : 0);
-  const badge = milestone ? `Level ${level} badge` : level % 5 === 0 ? "Mystery character" : null;
-  return { gems, badge };
+  const badgeNames = ["Clarity Crest", "Momentum Medal", "Resolve Emblem", "Streak Star", "Victory Sigil", "Reset Legend"];
+  const badgeEmojis = ["🔷", "🏅", "💠", "⭐", "🏆", "💎"];
+  const characterNames = ["Nova Scout", "Pulse Ranger", "Sky Sentinel", "Comet Keeper", "Aurora Guardian", "Zenith Voyager"];
+  const characterEmojis = ["🧑‍🚀", "🦸", "🪽", "☄️", "🛡️", "🌠"];
+  if (milestone) {
+    const index = (level / 10 - 1) % badgeNames.length;
+    return { gems, kind: "badge" as const, name: `${badgeNames[index]} ${level}`, emoji: badgeEmojis[index] };
+  }
+  if (level % 5 === 0) {
+    const index = (level / 5 - 1) % characterNames.length;
+    return { gems, kind: "character" as const, name: `${characterNames[index]} ${level}`, emoji: characterEmojis[index] };
+  }
+  return { gems, kind: null, name: null, emoji: null };
 }
 
 export function levelWindow(currentLevel: number, count = 8) {
   const start = Math.max(1, currentLevel - 2);
   return Array.from({ length: count }, (_, index) => start + index);
+}
+
+export type ItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+
+export const RARITY_LABELS: Record<ItemRarity, string> = {
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  epic: "Epic",
+  legendary: "Legendary",
+};
+
+const RARITY_WEIGHTS: Record<ItemRarity, number> = {
+  common: 10,
+  uncommon: 6,
+  rare: 3,
+  epic: 1.2,
+  legendary: 0.35,
+};
+
+function seededUnit(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) + 1) / 4294967297;
+}
+
+export function dailyShopItems<T extends { id: string; kind: string; rarity: string }>(items: T[], date: string, perKind = 3) {
+  const score = (item: T) => {
+    const rarity = item.rarity in RARITY_WEIGHTS ? item.rarity as ItemRarity : "common";
+    return -Math.log(seededUnit(`${date}:${item.id}`)) / RARITY_WEIGHTS[rarity];
+  };
+  return ["character", "badge"].flatMap((kind) =>
+    items.filter((item) => item.kind === kind).sort((a, b) => score(a) - score(b)).slice(0, perKind),
+  );
 }
