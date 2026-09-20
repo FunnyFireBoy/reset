@@ -119,6 +119,39 @@ export type Database = {
         }
         Relationships: []
       }
+      level_reward_claims: {
+        Row: {
+          claimed_at: string
+          gems_awarded: number
+          id: string
+          level: number
+          reward_emoji: string | null
+          reward_kind: string | null
+          reward_name: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          gems_awarded: number
+          id?: string
+          level: number
+          reward_emoji?: string | null
+          reward_kind?: string | null
+          reward_name?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          gems_awarded?: number
+          id?: string
+          level?: number
+          reward_emoji?: string | null
+          reward_kind?: string | null
+          reward_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_character: string | null
@@ -238,6 +271,7 @@ export type Database = {
           min_level: number
           name: string
           price_gems: number
+          rarity: string
         }
         Insert: {
           blurb?: string | null
@@ -247,6 +281,7 @@ export type Database = {
           min_level?: number
           name: string
           price_gems: number
+          rarity?: string
         }
         Update: {
           blurb?: string | null
@@ -256,6 +291,7 @@ export type Database = {
           min_level?: number
           name?: string
           price_gems?: number
+          rarity?: string
         }
         Relationships: []
       }
@@ -264,6 +300,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      buy_shop_item: { Args: { _item_id: string }; Returns: Json }
+      claim_level_rewards: { Args: never; Returns: Json }
       complete_goal: { Args: { _goal_id: string }; Returns: Json }
       log_recovery_relapse: {
         Args: {
