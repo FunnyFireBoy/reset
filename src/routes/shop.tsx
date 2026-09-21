@@ -42,6 +42,22 @@ type Item = {
   rarity: ItemRarity;
 };
 
+const rarityCardClasses: Record<ItemRarity, string> = {
+  common: "border-rarity-common",
+  uncommon: "border-rarity-uncommon",
+  rare: "border-rarity-rare",
+  epic: "border-rarity-epic",
+  legendary: "border-rarity-legendary rarity-shimmer",
+};
+
+const rarityLabelClasses: Record<ItemRarity, string> = {
+  common: "bg-rarity-common",
+  uncommon: "bg-rarity-uncommon",
+  rare: "bg-rarity-rare",
+  epic: "bg-rarity-epic",
+  legendary: "bg-rarity-legendary",
+};
+
 function localShopDate(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -91,10 +107,11 @@ function Shop() {
     queryKey: ["purchases", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
+      if (!user) return new Set<string>();
       const { data, error } = await supabase
         .from("purchases")
         .select("item_id")
-        .eq("user_id", user!.id);
+        .eq("user_id", user.id);
       if (error) throw error;
       return new Set((data ?? []).map((p) => p.item_id));
     },
@@ -158,11 +175,11 @@ function Shop() {
           return (
             <div
               key={item.id}
-              className={`cloud-card soft-pop group flex min-h-64 flex-col border-t-4 p-4 rarity-${item.rarity}`}
+              className={`cloud-card soft-pop group flex min-h-64 flex-col border-t-4 p-4 ${rarityCardClasses[item.rarity]}`}
               style={{ animationDelay: `${shown.indexOf(item) * 80}ms` }}
             >
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className={`rounded-sm bg-rarity-${item.rarity} px-2 py-1 text-[10px] font-black uppercase text-primary-foreground`}>
+                <span className={`rounded-sm px-2 py-1 text-[10px] font-black uppercase text-primary-foreground ${rarityLabelClasses[item.rarity]}`}>
                   {RARITY_LABELS[item.rarity]}
                 </span>
                 {locked ? <LockKeyhole className="size-4 text-muted-foreground" aria-label="Level locked" /> : null}

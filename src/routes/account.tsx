@@ -83,7 +83,7 @@ function Account() {
 
   const { data: earnedRewards } = useQuery({
     queryKey: ["level-rewards", user?.id],
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!profile,
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
