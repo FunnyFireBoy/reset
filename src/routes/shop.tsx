@@ -1,11 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Clock3, LockKeyhole, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, GemPill } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/lib/profile";
+import { dailyShopItems, RARITY_LABELS, type ItemRarity } from "@/lib/game";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
@@ -36,7 +39,35 @@ type Item = {
   price_gems: number;
   min_level: number;
   blurb: string | null;
+  rarity: ItemRarity;
 };
+
+const rarityCardClasses: Record<ItemRarity, string> = {
+  common: "border-rarity-common",
+  uncommon: "border-rarity-uncommon",
+  rare: "border-rarity-rare",
+  epic: "border-rarity-epic",
+  legendary: "border-rarity-legendary rarity-shimmer",
+};
+
+const rarityLabelClasses: Record<ItemRarity, string> = {
+  common: "bg-rarity-common",
+  uncommon: "bg-rarity-uncommon",
+  rare: "bg-rarity-rare",
+  epic: "bg-rarity-epic",
+  legendary: "bg-rarity-legendary",
+};
+
+function localShopDate(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function untilReset(now = new Date()) {
+  const next = new Date(now);
+  next.setHours(24, 0, 0, 0);
+  const seconds = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 1000));
+  return `${String(Math.floor(seconds / 3600)).padStart(2, "0")}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
 
 function Shop() {
   const navigate = useNavigate();
@@ -44,10 +75,23 @@ function Shop() {
   const { user, loading } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const [tab, setTab] = useState<"character" | "badge">("character");
+  const [shopDate, setShopDate] = useState("");
+  const [resetIn, setResetIn] = useState("--:--:--");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    setShopDate(localShopDate());
+    setResetIn(untilReset());
+    const timer = window.setInterval(() => {
+      const nextDate = localShopDate();
+      setResetIn(untilReset());
+      setShopDate(nextDate);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const { data: items } = useQuery({
     queryKey: ["shop"],
@@ -65,10 +109,11 @@ function Shop() {
     queryKey: ["purchases", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
+      if (!user) return new Set<string>();
       const { data, error } = await supabase
         .from("purchases")
         .select("item_id")
-        .eq("user_id", user!.id);
+        .eq("user_id", user.id);
       if (error) throw error;
       return new Set((data ?? []).map((p) => p.item_id));
     },
@@ -76,44 +121,52 @@ function Shop() {
 
   const buy = useMutation({
     mutationFn: async (item: Item) => {
-      if (!profile) throw new Error("Profile not ready");
-      if (profile.level < item.min_level) throw new Error(`Reach level ${item.min_level} first`);
-      if (profile.gems < item.price_gems) throw new Error("Not enough gems yet");
-      const { error } = await supabase
-        .from("purchases")
-        .insert({ user_id: user!.id, item_id: item.id });
+      const { data, error } = await supabase.rpc("buy_shop_item", { _item_id: item.id });
       if (error) throw error;
-      const { error: uErr } = await supabase
-        .from("profiles")
-        .update({ gems: profile.gems - item.price_gems })
-        .eq("user_id", user!.id);
-      if (uErr) throw uErr;
+      return data as { already_owned: boolean; item_name?: string };
     },
-    onSuccess: () => {
-      toast.success("Unlocked!");
+    onSuccess: (result) => {
+      toast.success(result.already_owned ? "Already in your collection" : "Reward unlocked!", {
+        description: result.item_name ? `${result.item_name} is now in your profile.` : undefined,
+      });
       qc.invalidateQueries({ queryKey: ["purchases"] });
+      qc.invalidateQueries({ queryKey: ["collection"] });
       qc.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Purchase failed"),
   });
 
-  const shown = (items ?? []).filter((i) => i.kind === tab);
+  const rotation = dailyShopItems(items ?? [], shopDate);
+  const shown = rotation.filter((item) => item.kind === tab);
 
   return (
     <AppShell header={<GemPill gems={profile?.gems ?? 0} name={profile?.display_name} />}>
-      <h1 className="mb-3 font-hand text-4xl">Shop</h1>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="font-display text-xs uppercase text-muted-foreground">Daily drop</p>
+          <h1 className="font-hand text-4xl">Item Shop</h1>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border bg-cloud px-2 py-1 font-display text-xs">
+          <Clock3 className="size-3" aria-hidden="true" />
+          <span>{resetIn}</span>
+        </div>
+      </div>
+
+      <div className="cloud-card rarity-shimmer mb-5 flex items-center gap-3 border-l-4 border-rarity-legendary p-3">
+        <Sparkles className="size-5 shrink-0 text-rarity-legendary" aria-hidden="true" />
+        <p className="text-sm"><span className="font-black">Fresh every day.</span> Rare rewards return, but Legendary drops do not appear often.</p>
+      </div>
 
       <div className="mb-5 flex gap-2">
         {(["character", "badge"] as const).map((k) => (
-          <button
+          <Button
             key={k}
             onClick={() => setTab(k)}
-            className={`rounded-full px-5 py-2 text-sm font-bold ${
-              tab === k ? "bg-accent text-accent-foreground" : "bg-cloud text-foreground"
-            }`}
+            variant={tab === k ? "default" : "secondary"}
+            className="h-10 flex-1 font-black"
           >
             {k === "character" ? "Characters" : "Badges"}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -122,23 +175,28 @@ function Shop() {
           const isOwned = owned?.has(item.id);
           const locked = (profile?.level ?? 1) < item.min_level;
           return (
-            <div key={item.id} className="cloud-card flex flex-col p-4">
-              <div className="text-center text-5xl">{item.emoji}</div>
+            <div
+              key={item.id}
+              className={`cloud-card soft-pop group flex min-h-64 flex-col border-t-4 p-4 ${rarityCardClasses[item.rarity]}`}
+              style={{ animationDelay: `${shown.indexOf(item) * 80}ms` }}
+            >
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className={`rounded-sm px-2 py-1 text-[10px] font-black uppercase text-primary-foreground ${rarityLabelClasses[item.rarity]}`}>
+                  {RARITY_LABELS[item.rarity]}
+                </span>
+                {locked ? <LockKeyhole className="size-4 text-muted-foreground" aria-label="Level locked" /> : null}
+              </div>
+              <div className={`reward-pulse my-2 text-center text-6xl ${item.rarity === "common" ? "[animation:none]" : ""}`}>{item.emoji}</div>
               <p className="mt-2 text-center font-bold">{item.name}</p>
               <p className="mt-1 flex-1 text-center text-xs text-muted-foreground">{item.blurb}</p>
-              <button
-                disabled={isOwned || buy.isPending}
+              <Button
+                disabled={isOwned || locked || buy.isPending}
                 onClick={() => buy.mutate(item)}
-                className={`mt-3 rounded-md px-3 py-2 text-sm font-bold ${
-                  isOwned
-                    ? "bg-primary text-primary-foreground"
-                    : locked
-                      ? "bg-muted text-muted-foreground"
-                      : "btn-glossy"
-                }`}
+                variant={isOwned ? "secondary" : locked ? "outline" : "default"}
+                className="mt-3 h-10 w-full font-black"
               >
                 {isOwned ? "Owned" : locked ? `Lvl ${item.min_level}` : `${item.price_gems} 💎`}
-              </button>
+              </Button>
             </div>
           );
         })}
