@@ -75,14 +75,16 @@ function Shop() {
   const { user, loading } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const [tab, setTab] = useState<"character" | "badge">("character");
-  const [shopDate, setShopDate] = useState(() => localShopDate());
-  const [resetIn, setResetIn] = useState(() => untilReset());
+  const [shopDate, setShopDate] = useState("");
+  const [resetIn, setResetIn] = useState("--:--:--");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
 
   useEffect(() => {
+    setShopDate(localShopDate());
+    setResetIn(untilReset());
     const timer = window.setInterval(() => {
       const nextDate = localShopDate();
       setResetIn(untilReset());

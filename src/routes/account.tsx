@@ -86,6 +86,15 @@ function Account() {
     enabled: !!user?.id && !!profile,
     queryFn: async () => {
       if (!user) return [];
+      const { data: claimData, error: claimError } = await supabase.rpc("claim_level_rewards");
+      if (claimError) throw claimError;
+      const claim = claimData as { claimed_levels?: number; gems_awarded?: number };
+      if ((claim.claimed_levels ?? 0) > 0) {
+        qc.invalidateQueries({ queryKey: ["profile", user.id] });
+        toast.success(`${claim.claimed_levels} level rewards collected!`, {
+          description: `+${claim.gems_awarded ?? 0} gems and milestone rewards were added to your profile.`,
+        });
+      }
       const { data, error } = await supabase
         .from("level_reward_claims")
         .select("level, gems_awarded, reward_kind, reward_name, reward_emoji")
