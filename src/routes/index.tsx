@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
 
 function rewardFor(level: number) {
   const reward = levelReward(level);
-  return `${reward.gems} gems${reward.badge ? `\n${reward.badge}` : ""}`;
+  return `${reward.gems} gems${reward.name ? `\n${reward.emoji} ${reward.name}` : ""}`;
 }
 
 function Home() {
