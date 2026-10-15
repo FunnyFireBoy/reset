@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Android uses Capacitor to load the published HTTPS web app with native plugins; this preserves the existing hosted server functionality rather than attempting an offline static export.
+- Produce Android download builds in temporary staging, run Capacitor copy/update before Gradle, and verify APK signing and embedded configuration before delivery; generated native assets must exist for plugin registration.

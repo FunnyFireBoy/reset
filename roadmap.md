@@ -16,7 +16,7 @@
 - [x] Add daily Android reminder settings and notifications
 - [x] Add Apple sign-in
 - [x] Add custom addiction entry, app-wide motion, Apple-style sign-in, and first-use notification prompt
-- [ ] Package and verify the web app and Android APK
+- [x] Package Android APK and verify its signature, contents, and hosted web app configuration (physical-device testing not performed)
 - [x] Cancel real Google Calendar setup at the user’s request; keep existing calendar handoffs
 
 - [x] Add a deterministic daily rotating shop with rarity and returning items
