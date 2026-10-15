@@ -17,6 +17,7 @@
 - [x] Add Apple sign-in
 - [x] Add custom addiction entry, app-wide motion, Apple-style sign-in, and first-use notification prompt
 - [ ] Package and verify the web app and Android APK
+- [x] Cancel real Google Calendar setup at the user’s request; keep existing calendar handoffs
 
 - [x] Add a deterministic daily rotating shop with rarity and returning items
 - [x] Grant character and badge rewards when levels are reached
