@@ -69,17 +69,52 @@ function Help() {
         className="mb-4 w-full rounded-md border border-border bg-cloud px-3 py-2"
       />
 
-      <div className="space-y-3">
+      <div className="mb-4 grid grid-cols-2 gap-2">
         {SEARCHES.map((s) => (
           <Button
             key={s.q}
-            onClick={() => openMap(`${s.q} ${place}`)}
-            className="btn-glossy h-auto w-full px-4 py-3 text-center font-bold"
+            onClick={() => setActiveSearch(s.q)}
+            variant={activeSearch === s.q ? "default" : "outline"}
+            className={`h-auto px-3 py-2 text-center text-xs font-bold ${
+              activeSearch === s.q ? "btn-glossy" : ""
+            }`}
           >
             {s.label}
           </Button>
         ))}
       </div>
+
+      {embedUrl ? (
+        <div className="cloud-card overflow-hidden p-0">
+          <iframe
+            key={query}
+            title={`Map of ${query}`}
+            src={embedUrl}
+            className="h-80 w-full border-0"
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+          <button
+            onClick={() => openMap(query)}
+            className="block w-full px-4 py-2 text-center text-xs font-bold text-primary underline"
+          >
+            Open in Google Maps app
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {SEARCHES.map((s) => (
+            <Button
+              key={s.q}
+              onClick={() => openMap(`${s.q} ${place}`)}
+              className="btn-glossy h-auto w-full px-4 py-3 text-center font-bold"
+            >
+              {s.label}
+            </Button>
+          ))}
+        </div>
+      )}
 
       <div className="cloud-card mt-6 space-y-2 p-4 text-sm">
         <p className="font-bold">Free helplines</p>
