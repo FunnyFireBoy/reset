@@ -38,7 +38,7 @@ const MAPS_KEY = import.meta.env["VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY
 
 function Help() {
   const [place, setPlace] = useState("");
-  const [activeSearch, setActiveSearch] = useState(SEARCHES[0].q);
+  const [activeSearch, setActiveSearch] = useState(SEARCHES[0]?.q ?? "");
 
   const query = `${activeSearch} ${place}`.trim();
   const embedUrl = MAPS_KEY
