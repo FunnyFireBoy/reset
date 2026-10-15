@@ -32,8 +32,18 @@ const SEARCHES = [
   { label: "Support groups", q: "addiction support group meeting near me" },
 ];
 
+const MAPS_KEY = import.meta.env["VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY"] as
+  | string
+  | undefined;
+
 function Help() {
   const [place, setPlace] = useState("");
+  const [activeSearch, setActiveSearch] = useState(SEARCHES[0].q);
+
+  const query = `${activeSearch} ${place}`.trim();
+  const embedUrl = MAPS_KEY
+    ? `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(query)}&zoom=12`
+    : null;
 
   return (
     <AppShell>
