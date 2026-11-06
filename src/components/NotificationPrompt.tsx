@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   isNative,
+  notificationsAllowed,
+  nativeNotify,
   requestNotificationPermission,
   scheduleDailyReminder,
 } from "@/lib/native-bridge";
@@ -22,9 +24,15 @@ export function NotificationPrompt({ ready }: { ready: boolean }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!ready || window.localStorage.getItem(PROMPT_KEY)) return;
-    const timer = window.setTimeout(() => setOpen(true), 900);
-    return () => window.clearTimeout(timer);
+    if (!ready) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void notificationsAllowed().then((allowed) => {
+        // An old "enabled" flag is not permission; offer the repaired request again.
+        if (!cancelled && !allowed && window.localStorage.getItem(PROMPT_KEY) !== "dismissed-v2") setOpen(true);
+      });
+    }, 900);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [ready]);
 
   async function enable() {
@@ -43,14 +51,17 @@ export function NotificationPrompt({ ready }: { ready: boolean }) {
         window.localStorage.setItem("reset-daily-reminder-time", "09:00");
       }
       setOpen(false);
+      if (!isNative) await nativeNotify("RESET · Alerts are on", "Your next healthy choice matters. Quest celebrations are ready.");
       toast.success(isNative ? "Daily motivation is on for 9:00 AM." : "Quest alerts are on.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Notifications could not be enabled. Please try again.");
     } finally {
       setBusy(false);
     }
   }
 
   function notNow() {
-    window.localStorage.setItem(PROMPT_KEY, "dismissed");
+    window.localStorage.setItem(PROMPT_KEY, "dismissed-v2");
     setOpen(false);
   }
 

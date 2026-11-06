@@ -95,12 +95,12 @@ function Help() {
             allowFullScreen
             referrerPolicy="strict-origin-when-cross-origin"
           />
-          <button
+          <Button variant="ghost"
             onClick={() => openMap(query)}
             className="block w-full px-4 py-2 text-center text-xs font-bold text-primary underline"
           >
             Open in Google Maps app
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">

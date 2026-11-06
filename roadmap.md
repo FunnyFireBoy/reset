@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Repair PWA notification permission and notification delivery while open
+- [x] Repair mobile Maps and Google/device calendar handoffs (native calendar change requires a rebuilt APK)
+- [x] Verify signed-in test notification delivery, link formatting, and phone layouts; Maps rendering and external app launches require testing on an authorized published phone origin
+
 - [x] Add private recovery event history and protected actions
 - [x] Add quit-date, elapsed-day, relapse, and restart controls to Home
 - [x] Add recovery history to Account

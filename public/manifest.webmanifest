@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "RESET",
+  "short_name": "RESET",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#44A96C",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "/icons/reset-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/reset-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
