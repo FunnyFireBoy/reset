@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, CheckCircle2, Sparkles, Trophy } from "lucide-react";
@@ -198,7 +199,7 @@ function Quests() {
         </>
       )}
 
-      {scheduling && (
+      {scheduling && createPortal(
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/40 p-4">
           <div className="cloud-card w-full max-w-md space-y-3 p-5">
             <p className="font-hand text-2xl">Focus time for “{scheduling.title}”</p>
@@ -240,7 +241,7 @@ function Quests() {
               Close
             </button>
           </div>
-        </div>
+        </div>, document.body
       )}
 
       <Dialog open={!!celebrating} onOpenChange={(open) => !open && setCelebrating(null)}>
