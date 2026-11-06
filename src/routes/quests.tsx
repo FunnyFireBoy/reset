@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/useAuth";
 import { localDateString, useCompleteGoal, useGoals, useProfile, type Goal } from "@/lib/profile";
 import { googleCalendarUrl, toIcsDataUrl } from "@/lib/game";
 import { ensureDailyQuests } from "@/lib/plan.functions";
-import { nativeNotify, openCalendar, openDefaultCalendar, requestNotificationPermission } from "@/lib/native-bridge";
+import { nativeNotify, notificationsAllowed, openCalendar, openDefaultCalendar, requestNotificationPermission } from "@/lib/native-bridge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -107,7 +107,10 @@ function Quests() {
   }, [loading, user, navigate]);
 
   useEffect(() => {
-    setNotificationsEnabled("Notification" in window && Notification.permission === "granted");
+    const refresh = () => { void notificationsAllowed().then(setNotificationsEnabled); };
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
   }, []);
 
   useEffect(() => {
@@ -119,21 +122,23 @@ function Quests() {
   }, [createDailyQuests, profile?.onboarded, queryClient, user]);
 
   async function enableNotifications() {
-    if (window.top !== window.self && !("Notification" in window)) {
-      toast.message("Open RESET in its own tab to enable notifications.");
-      return;
+    try {
+      const granted = await requestNotificationPermission();
+      setNotificationsEnabled(granted);
+      if (granted) {
+        await nativeNotify("RESET · Alerts are on", "Your quest celebrations are ready.");
+        toast.success("Quest notifications are on.");
+      } else toast.message("Notifications remain off. You can try again in Account.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Notifications could not be enabled.");
     }
-    const granted = await requestNotificationPermission();
-    setNotificationsEnabled(granted);
-    if (granted) toast.success("Quest notifications are on.");
-    else toast.message("Notifications remain off. You can enable them in your browser settings.");
   }
 
   function celebrate(goal: Goal, leveledUp: boolean) {
     setCelebrating(goal);
     const title = leveledUp ? "Level up! Incredible work." : "Quest complete! You did it.";
     toast.success(`${title} +${goal.xp_reward} XP and +${goal.gem_reward} gems`);
-    if (notificationsEnabled) void nativeNotify("RESET · Quest complete", `${goal.title} · +${goal.xp_reward} XP · +${goal.gem_reward} gems`);
+    if (notificationsEnabled) void nativeNotify("RESET · Quest complete", `${goal.title} · +${goal.xp_reward} XP · +${goal.gem_reward} gems`).catch(() => toast.message("Quest saved, but your phone alert could not be shown."));
   }
 
   const open = (goals ?? []).filter((g) => !g.completed);
@@ -207,7 +212,11 @@ function Quests() {
               <Button
                 disabled={!when}
                 className="btn-glossy h-auto py-2 text-sm font-bold"
-                onClick={() => when && openCalendar(googleCalendarUrl(scheduling.title, scheduling.description ?? "", new Date(when)))}
+                onClick={() => {
+                  if (!when) return;
+                  const start = new Date(when);
+                  void openCalendar(googleCalendarUrl(scheduling.title, scheduling.description ?? "", start), scheduling.title, scheduling.description ?? "", start, new Date(start.getTime() + 30 * 60000)).catch(() => toast.error("Calendar could not open. Please try the device calendar option."));
+                }}
               >
                 Google Calendar
               </Button>
@@ -218,7 +227,7 @@ function Quests() {
                 onClick={() => {
                   if (!when) return;
                   const start = new Date(when);
-                  void openDefaultCalendar(scheduling.title, scheduling.description ?? "", start, new Date(start.getTime() + 30 * 60000), toIcsDataUrl(scheduling.title, scheduling.description ?? "", start));
+                   void openDefaultCalendar(scheduling.title, scheduling.description ?? "", start, new Date(start.getTime() + 30 * 60000), toIcsDataUrl(scheduling.title, scheduling.description ?? "", start)).catch(() => toast.error("Device calendar could not open. Please try Google Calendar."));
                 }}
               >
                 Device calendar

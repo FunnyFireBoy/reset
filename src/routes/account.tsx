@@ -11,7 +11,7 @@ import { useProfile, useRecoveryEvents } from "@/lib/profile";
 import { levelFromXp, levelProgress, levelReward, xpIntoLevel, XP_PER_LEVEL } from "@/lib/game";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { cancelDailyReminder, isNative, scheduleDailyReminder } from "@/lib/native-bridge";
+import { cancelDailyReminder, isNative, scheduleDailyReminder, notificationsAllowed, requestNotificationPermission, nativeNotify } from "@/lib/native-bridge";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -43,6 +43,7 @@ function Account() {
   const [name, setName] = useState("");
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState("09:00");
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
   const currentLevel = levelFromXp(profile?.xp ?? 0);
   const [levelStart, setLevelStart] = useState(1);
   const [selectedLevel, setSelectedLevel] = useState(1);
@@ -63,8 +64,12 @@ function Account() {
   }, [currentLevel, profile]);
 
   useEffect(() => {
+    const refresh = () => { void notificationsAllowed().then(setAlertsEnabled); };
+    refresh();
+    window.addEventListener("focus", refresh);
     setReminderEnabled(window.localStorage.getItem("reset-daily-reminder") === "on");
     setReminderTime(window.localStorage.getItem("reset-daily-reminder-time") ?? "09:00");
+    return () => window.removeEventListener("focus", refresh);
   }, []);
 
   const { data: collection } = useQuery({
@@ -133,7 +138,7 @@ function Account() {
       return;
     }
     const [hour, minute] = time.split(":").map(Number);
-    const scheduled = await scheduleDailyReminder(hour || 9, minute || 0);
+    const scheduled = await scheduleDailyReminder(Number.isFinite(hour) ? hour : 9, Number.isFinite(minute) ? minute : 0);
     if (!scheduled) {
       toast.error("Notification permission is needed for daily reminders.");
       return;
@@ -237,6 +242,22 @@ function Account() {
       </div>
 
       <div className="cloud-card mb-5 space-y-3 p-4">
+        <p className="font-bold">Quest notifications</p>
+        <Button variant="outline" className="w-full" onClick={async () => {
+          try {
+            const allowed = await requestNotificationPermission();
+            setAlertsEnabled(allowed);
+            if (allowed) {
+              await nativeNotify("RESET · Your recovery matters", "One small healthy choice today is a win. Your alerts are working.");
+              toast.success("Test notification sent.");
+            } else toast.message("Notifications remain off.");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Notifications could not be enabled.");
+          }
+        }}>{alertsEnabled ? "Send test notification" : "Enable notifications"}</Button>
+      </div>
+
+      {isNative && <div className="cloud-card mb-5 space-y-3 p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="font-bold">Daily recovery reminder</p>
@@ -251,7 +272,7 @@ function Account() {
           onBlur={() => reminderEnabled && updateReminder(true, reminderTime)}
           disabled={!reminderEnabled}
         />
-      </div>
+      </div>}
 
       <div className="cloud-card mb-5 space-y-3 p-4">
         <p className="font-bold">Display name</p>
