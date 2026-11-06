@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { describe, expect, test } from 'bun:test';
 import { androidAppIntent, calendarInsertIntent } from './mobile-links';
 
