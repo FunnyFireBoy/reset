@@ -14,6 +14,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PromoteRouteImport } from './routes/promote'
 import { Route as QuestsRouteImport } from './routes/quests'
 import { Route as ShopRouteImport } from './routes/shop'
 
@@ -42,6 +43,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PromoteRoute = PromoteRouteImport.update({
+  id: '/promote',
+  path: '/promote',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuestsRoute = QuestsRouteImport.update({
   id: '/quests',
   path: '/quests',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/help': typeof HelpRoute
   '/onboarding': typeof OnboardingRoute
+  '/promote': typeof PromoteRoute
   '/quests': typeof QuestsRoute
   '/shop': typeof ShopRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/help': typeof HelpRoute
   '/onboarding': typeof OnboardingRoute
+  '/promote': typeof PromoteRoute
   '/quests': typeof QuestsRoute
   '/shop': typeof ShopRoute
 }
@@ -78,15 +86,31 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/help': typeof HelpRoute
   '/onboarding': typeof OnboardingRoute
+  '/promote': typeof PromoteRoute
   '/quests': typeof QuestsRoute
   '/shop': typeof ShopRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/account' | '/auth' | '/help' | '/onboarding' | '/quests' | '/shop'
+    | '/'
+    | '/account'
+    | '/auth'
+    | '/help'
+    | '/onboarding'
+    | '/promote'
+    | '/quests'
+    | '/shop'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/account' | '/auth' | '/help' | '/onboarding' | '/quests' | '/shop'
+  to:
+    | '/'
+    | '/account'
+    | '/auth'
+    | '/help'
+    | '/onboarding'
+    | '/promote'
+    | '/quests'
+    | '/shop'
   id:
     | '__root__'
     | '/'
@@ -94,6 +118,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/help'
     | '/onboarding'
+    | '/promote'
     | '/quests'
     | '/shop'
   fileRoutesById: FileRoutesById
@@ -104,6 +129,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HelpRoute: typeof HelpRoute
   OnboardingRoute: typeof OnboardingRoute
+  PromoteRoute: typeof PromoteRoute
   QuestsRoute: typeof QuestsRoute
   ShopRoute: typeof ShopRoute
 }
@@ -145,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/promote': {
+      id: '/promote'
+      path: '/promote'
+      fullPath: '/promote'
+      preLoaderRoute: typeof PromoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quests': {
       id: '/quests'
       path: '/quests'
@@ -168,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HelpRoute: HelpRoute,
   OnboardingRoute: OnboardingRoute,
+  PromoteRoute: PromoteRoute,
   QuestsRoute: QuestsRoute,
   ShopRoute: ShopRoute,
 }
