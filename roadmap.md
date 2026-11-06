@@ -1,8 +1,8 @@
 # Roadmap
 
-- [ ] Build isolated /promote homepage matching the sky-blue reference
-- [ ] Capture privacy-safe authentic app screenshots and add a click-to-load live preview
-- [ ] Verify promotional page on desktop/mobile and preserve existing app pages
+- [x] Build isolated /promote homepage matching the sky-blue reference
+- [x] Capture privacy-safe authentic app screenshots and add a click-to-load live preview
+- [x] Verify promotional page on desktop/mobile and preserve existing app pages (external iframe may be blocked; new-tab fallback provided)
 
 - [x] Repair PWA notification permission and notification delivery while open
 - [x] Repair mobile Maps and Google/device calendar handoffs (native calendar change requires a rebuilt APK)
