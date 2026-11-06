@@ -137,7 +137,7 @@ function Account() {
       toast.success("Daily reminder turned off.");
       return;
     }
-    const [hour, minute] = time.split(":").map(Number);
+    const [hour = 9, minute = 0] = time.split(":").map(Number);
     const scheduled = await scheduleDailyReminder(Number.isFinite(hour) ? hour : 9, Number.isFinite(minute) ? minute : 0);
     if (!scheduled) {
       toast.error("Notification permission is needed for daily reminders.");
