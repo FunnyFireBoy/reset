@@ -199,7 +199,7 @@ function Quests() {
       )}
 
       {scheduling && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/40 p-4">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/40 p-4">
           <div className="cloud-card w-full max-w-md space-y-3 p-5">
             <p className="font-hand text-2xl">Focus time for “{scheduling.title}”</p>
             <input
