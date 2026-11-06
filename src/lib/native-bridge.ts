@@ -74,8 +74,10 @@ export const openMap = async (query: string) => {
 export const openCalendar = async (url: string, title?: string, description = '', start?: Date, end?: Date) => {
   if (title && start && end) {
     if (isNative && Capacitor.getPlatform() === 'android') {
-      const opened = await CalendarHandoff.openEvent({ title, description, start: start.getTime(), end: end.getTime(), google: true });
-      if (opened.completed) return;
+      try {
+        const opened = await CalendarHandoff.openEvent({ title, description, start: start.getTime(), end: end.getTime(), google: true });
+        if (opened.completed) return;
+      } catch { /* Older installed APKs lack the calendar plugin; keep the web fallback. */ }
     } else if (/Android/i.test(navigator.userAgent)) {
       window.location.assign(calendarInsertIntent(title, description, start, end, url, 'com.google.android.calendar'));
       return;
@@ -87,8 +89,10 @@ export const openCalendar = async (url: string, title?: string, description = ''
 
 export const openDefaultCalendar = async (title: string, description: string, start: Date, end: Date, fallbackUrl: string) => {
   if (isNative && Capacitor.getPlatform() === 'android') {
-    const opened = await CalendarHandoff.openEvent({ title, description, start: start.getTime(), end: end.getTime(), google: false });
-    if (opened.completed) return;
+    try {
+      const opened = await CalendarHandoff.openEvent({ title, description, start: start.getTime(), end: end.getTime(), google: false });
+      if (opened.completed) return;
+    } catch { /* Older APKs can still download a calendar event. */ }
   } else if (/Android/i.test(navigator.userAgent)) {
     // Use an HTTPS fallback; browsers refuse data URLs inside intent fallbacks.
     const googleUrl = new URL('https://calendar.google.com/calendar/render');
