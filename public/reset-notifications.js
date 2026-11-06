@@ -1,0 +1,14 @@
+// Messaging only: no app-shell caching or offline interception.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
+    if (existing) {
+      await existing.focus();
+      await existing.navigate('/quests');
+    } else {
+      await self.clients.openWindow('/quests');
+    }
+  })());
+});

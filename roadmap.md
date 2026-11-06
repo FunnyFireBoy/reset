@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Repair PWA notification permission and notification delivery while open
+- [ ] Repair mobile Maps and Google/device calendar handoffs
+- [ ] Verify permissions, link formatting, and phone layouts; document device-only checks
+
 - [x] Add private recovery event history and protected actions
 - [x] Add quit-date, elapsed-day, relapse, and restart controls to Home
 - [x] Add recovery history to Account
