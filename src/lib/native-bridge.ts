@@ -1,7 +1,13 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Browser } from '@capacitor/browser';
 import { AppLauncher } from '@capacitor/app-launcher';
+import { androidAppIntent, calendarInsertIntent } from './mobile-links';
+import { requestWebNotifications, showWebNotification, webNotificationPermission } from './web-notifications';
+
+const CalendarHandoff = registerPlugin<{
+  openEvent(options: { title: string; description: string; start: number; end: number; google: boolean }): Promise<{ completed: boolean }>;
+}>('CalendarHandoff');
 
 export const isNative = Capacitor.isNativePlatform();
 
@@ -24,8 +30,8 @@ export const nativeNotify = async (title: string, body: string, id?: number) => 
         },
       ],
     });
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, { body, icon: '/favicon.png' });
+  } else {
+    await showWebNotification(title, body);
   }
 };
 
@@ -36,50 +42,68 @@ export const requestNotificationPermission = async () => {
     const requested = await LocalNotifications.requestPermissions();
     return requested.display === 'granted';
   }
-  if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
-  return (await Notification.requestPermission()) === 'granted';
+  return requestWebNotifications();
+};
+
+export const notificationsAllowed = async () => {
+  if (isNative) return (await LocalNotifications.checkPermissions()).display === 'granted';
+  return webNotificationPermission() === 'granted';
 };
 
 /**
  * Open maps natively or in browser
  */
 export const openMap = async (query: string) => {
-  const url = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
+  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   if (isNative) {
-    // Try to open geo URI or maps app
-    const canOpen = await AppLauncher.canOpenUrl({ url: 'geo:0,0?q=' + encodeURIComponent(query) });
-    if (canOpen.value) {
-      await AppLauncher.openUrl({ url: 'geo:0,0?q=' + encodeURIComponent(query) });
-    } else {
-      await Browser.open({ url });
-    }
+    try {
+      const opened = await AppLauncher.openUrl({ url: Capacitor.getPlatform() === 'android' ? `geo:0,0?q=${encodeURIComponent(query)}` : url });
+      if (opened.completed) return;
+    } catch { /* Browser fallback when no Maps app is available. */ }
+    await Browser.open({ url });
+  } else if (/Android/i.test(navigator.userAgent)) {
+    window.location.assign(androidAppIntent(url, 'com.google.android.apps.maps'));
   } else {
-    window.open(url, '_blank');
+    window.location.assign(url);
   }
 };
 
 /**
  * Open calendar event natively or in browser
  */
-export const openCalendar = async (url: string) => {
-  if (isNative) {
-    await Browser.open({ url });
-  } else {
-    window.open(url, '_blank');
+export const openCalendar = async (url: string, title?: string, description = '', start?: Date, end?: Date) => {
+  if (title && start && end) {
+    if (isNative && Capacitor.getPlatform() === 'android') {
+      const opened = await CalendarHandoff.openEvent({ title, description, start: start.getTime(), end: end.getTime(), google: true });
+      if (opened.completed) return;
+    } else if (/Android/i.test(navigator.userAgent)) {
+      window.location.assign(calendarInsertIntent(title, description, start, end, url, 'com.google.android.calendar'));
+      return;
+    }
   }
+  if (isNative) await Browser.open({ url });
+  else window.location.assign(url);
 };
 
 export const openDefaultCalendar = async (title: string, description: string, start: Date, end: Date, fallbackUrl: string) => {
   if (isNative && Capacitor.getPlatform() === 'android') {
-    const intent = `intent:#Intent;action=android.intent.action.INSERT;type=vnd.android.cursor.item/event;S.title=${encodeURIComponent(title)};S.description=${encodeURIComponent(description)};l.beginTime=${start.getTime()};l.endTime=${end.getTime()};end`;
-    const available = await AppLauncher.canOpenUrl({ url: intent });
-    if (available.value) {
-      await AppLauncher.openUrl({ url: intent });
-      return;
-    }
+    const opened = await CalendarHandoff.openEvent({ title, description, start: start.getTime(), end: end.getTime(), google: false });
+    if (opened.completed) return;
+  } else if (/Android/i.test(navigator.userAgent)) {
+    // Use an HTTPS fallback; browsers refuse data URLs inside intent fallbacks.
+    const googleUrl = new URL('https://calendar.google.com/calendar/render');
+    googleUrl.search = new URLSearchParams({ action: 'TEMPLATE', text: title, details: description,
+      dates: `${start.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${end.toISOString().replace(/[-:]/g, '').split('.')[0]}Z` }).toString();
+    window.location.assign(calendarInsertIntent(title, description, start, end, googleUrl.href));
+    return;
   }
-  window.location.href = fallbackUrl;
+  // Calendar files are the supported handoff on iOS and desktop; the OS chooses the calendar app.
+  const link = document.createElement('a');
+  link.href = fallbackUrl;
+  link.download = 'RESET-quest.ics';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 };
 
 /**
