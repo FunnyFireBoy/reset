@@ -440,7 +440,7 @@
   .promote-features, .promote-gallery { grid-template-columns: 1fr; gap: 40px; padding-block: 60px; }
   .promote-page h2 { font-size: 34px; }
   .promote-page h2 .promote-script { font-size: 44px; }
-  .promote-gallery h2 br { display: none; }
+  .promote-gallery h2 br { display: block; }
   .promote-live { padding-block: 60px; }
   .promote-live-heading { align-items: flex-start; flex-direction: column; }
   .promote-live-heading h2 { font-size: 30px; }
